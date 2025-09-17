@@ -135,9 +135,11 @@ for (j = 0; j < lengthOf(lifFiles); j++) {
         dimensions = SplitSeries(lifPath, i);
         SaveSeries(outputDir, logFilename, lifName);
     }
+}
 
-    // Close Bio-Formats Macro Extensions
-    Ext.close();
-    print("All series processed.");
+// Close Bio-Formats Macro Extensions
+Ext.close();
+    
+print("All series processed.");
 
 setBatchMode(false);
