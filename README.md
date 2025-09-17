@@ -11,12 +11,15 @@ A set of [ImageJ](https://imagej.nih.gov/ij/) macros for automated extraction, c
 
 ## Folder Structure
 
-├── 00_ExtractTIF-Folder.ijm # Batch extract TIFFs from all LIF files in a folder 
-├── 00_ExtractTIF-SingleFile.ijm # Extract TIFFs from a single LIF file 
-├── 01_CleanStack.ijm # Clean and mask TIFF stacks, generate montages 
-├── .gitignore 
-├── LICENSE 
-└── README.md
+```bash
+callussegmentation/
+├── 00_ExtractTIF-Folder.ijm      # Batch extract TIFFs from all LIF files in a folder
+├── 00_ExtractTIF-SingleFile.ijm  # Extract TIFFs from a single LIF file
+├── 01_CleanStack.ijm             # Clean and mask TIFF stacks, generate montages
+├── .gitignore
+├── LICENSE
+└── README.md 
+```
 
 ## Usage
 
@@ -46,13 +49,3 @@ A set of [ImageJ](https://imagej.nih.gov/ij/) macros for automated extraction, c
 ## License
 
 This project is licensed under the [Creative Commons Attribution 4.0 International License](LICENSE).
-
-## Version Control
-
-To initialize a Git repository and push to GitLab:
-
-```bash
-git init
-git remote add origin git@git.wur.nl:froel001/[remotename].git
-git push --set-upstream origin main
-```
