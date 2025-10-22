@@ -60,11 +60,11 @@ function Clean(dir, file) {
 		run("glasbey_on_dark");
 		saveAs("Tiff", dir + "/02_cleaned/masks/" + pure_filename + "_mask.tif");
 		rename("MASK");
-	}
 
-	// Apply mask to original stack
-	imageCalculator("Multiply create stack", "RAW","MASK");
-	rename("MASKED");
+		// Apply mask to original stack
+		imageCalculator("Multiply create stack", "RAW","MASK");
+		rename("MASKED");
+	}
 	
 	// Make montage for checking quality of masking
 	makeMontage(dir, pure_filename);
