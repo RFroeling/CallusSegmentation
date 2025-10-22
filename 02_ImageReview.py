@@ -11,6 +11,8 @@ class TIFFReviewer:
 
         self.folder = None
         self.files = []
+        self.all_files = []
+        self.reviewed_files = []
         self.index = 0
         self.frames = []
         self.frame_index = 0
@@ -42,18 +44,87 @@ class TIFFReviewer:
         self.root.bind("<D>", lambda e: self.sort_file("declined"))
 
     def open_folder(self):
-        self.folder = filedialog.askdirectory()
-        if not self.folder:
+        folder = filedialog.askdirectory()
+        if not folder:
             return
-        self.files = [f for f in os.listdir(self.folder) if f.lower().endswith(".tif") or f.lower().endswith(".tiff") or f.lower().endswith(".png")]
+        self.folder = folder
+
+        # Gather all image files in folder
+        exts = (".tif", ".tiff")
+        all_files = [f for f in os.listdir(self.folder) if f.lower().endswith(exts)]
+        all_files.sort()
+        self.all_files = all_files
+
+        # Prepare log path and read existing log if present
+        self.log_file = os.path.join(self.folder, "review_log.txt")
+        reviewed = set()
+        if os.path.exists(self.log_file):
+            try:
+                with open(self.log_file, "r", encoding="utf-8") as log:
+                    # skip header if present
+                    header = log.readline()
+                    for line in log:
+                        parts = line.strip().split(",")
+                        if parts and parts[0]:
+                            reviewed.add(parts[0])
+            except Exception as e:
+                messagebox.showwarning("Log read error", f"Could not read existing log file:\n{e}")
+
+        # Save reviewed file names into separate list
+        self.reviewed_files = sorted(list(reviewed))
+
+        # Determine new files
+        new_files = [f for f in all_files if f not in reviewed]
+
+        # If a log exists and there are new files, ask whether to re-review all or only new ones
+        if reviewed:
+            if new_files:
+                resp = messagebox.askyesno(
+                    "Existing review log",
+                    f"A review log was found with {len(reviewed)} reviewed file(s).\n"
+                    f"{len(new_files)} file(s) are new in the folder.\n\n"
+                    "Re-review all files? (Yes = all files, No = only new files)"
+                )
+                if resp:
+                    # Reset log and review all files
+                    try:
+                        with open(self.log_file, "w", encoding="utf-8") as log:
+                            log.write("File,Decision,Timestamp\n")
+                    except Exception as e:
+                        messagebox.showwarning("Log write error", f"Could not reset log file:\n{e}")
+                    self.files = all_files.copy()
+                else:
+                    # Only review new files, keep existing log (append mode later)
+                    self.files = new_files
+            else:
+                # No new files
+                resp = messagebox.askyesno(
+                    "No new files",
+                    "All files in the folder are already reviewed.\nDo you want to re-review all files?"
+                )
+                if resp:
+                    try:
+                        with open(self.log_file, "w", encoding="utf-8") as log:
+                            log.write("File,Decision,Timestamp\n")
+                    except Exception as e:
+                        messagebox.showwarning("Log write error", f"Could not reset log file:\n{e}")
+                    self.files = all_files.copy()
+                else:
+                    messagebox.showinfo("Nothing to do", "No new files to review.")
+                    return
+        else:
+            # No existing log; create one and review all files
+            try:
+                with open(self.log_file, "w", encoding="utf-8") as log:
+                    log.write("File,Decision,Timestamp\n")
+            except Exception as e:
+                messagebox.showwarning("Log write error", f"Could not create log file:\n{e}")
+            self.files = all_files.copy()
+
         self.index = 0
         if not self.files:
             messagebox.showinfo("No files", "No image files found in folder")
             return
-        # Create/reset log file
-        self.log_file = os.path.join(self.folder, "review_log.txt")
-        with open(self.log_file, "w") as log:
-            log.write("File,Decision,Timestamp\n")
         self.show_file()
 
     def load_frames(self, path):
@@ -62,7 +133,7 @@ class TIFFReviewer:
         for frame in ImageSequence.Iterator(img):
             self.frames.append(ImageTk.PhotoImage(frame.copy().convert("RGB")))
         self.frame_index = 0
-        self.scrollbar.config(to=len(self.frames)-1)
+        self.scrollbar.config(to=max(0, len(self.frames)-1))
 
     def show_file(self):
         if self.index < 0 or self.index >= len(self.files):
@@ -86,8 +157,11 @@ class TIFFReviewer:
     def sort_file(self, decision):
         if self.log_file:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open(self.log_file, "a") as log:
-                log.write(f"{self.files[self.index]},{decision},{timestamp}\n")
+            try:
+                with open(self.log_file, "a", encoding="utf-8") as log:
+                    log.write(f"{self.files[self.index]},{decision},{timestamp}\n")
+            except Exception as e:
+                messagebox.showwarning("Log write error", f"Could not write to log file:\n{e}")
 
         self.index += 1
         if self.index < len(self.files):
