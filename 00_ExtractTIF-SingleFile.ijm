@@ -32,12 +32,10 @@ function getTimestamp() {
 }
 
 // Function to create log file and write header
-function createLogFile(logDir, lifName) {
-    logTimestamp = getTimestamp();
-    logFilename = logDir + File.separator + logTimestamp + "__" + lifName + ".csv";
-    header = "lif_file,series_name,output_path,width,height,channels,slices,frames,export_time\n";
+function createLogFile(logFilename) {
+    header = "Filename,Timestamp,Series,Exported\n";
     File.saveString(header, logFilename);
-    return logFilename;
+    print("Log file created: " + logFilename);
 }
 
 function Dimensions(){
@@ -47,16 +45,16 @@ function Dimensions(){
 }
 
 // Function to append export info to log file
-function logExport(logFilename, lifName, seriesName, outputPath, dimensions) {
+function logExport(logFilename, lifName, seriesCount, exportCount) {
     exportTime = getTimestamp();
-    line = lifName + "," + seriesName + "," + outputPath + "," + dimensions[0] + "," + dimensions[1] + "," + dimensions[2] + "," + dimensions[3] + "," + dimensions[4] + "," + exportTime;
+    line = lifName + "," + exportTime + "," + seriesCount + "," + exportCount + "\n";
     File.append(line, logFilename);
 }
 
 // Function to split series and save
 function SplitSeries(lifPath, i) {
     // Open the series
-    run("Bio-Formats Importer", "open=[" + lifPath + "] autoscale color_mode=Default view=Hyperstack stack_order=XYCZT series_" + i+1);
+    run("Bio-Formats Importer", "open=[" + lifPath + "] autoscale color_mode=Default view=Hyperstack stack_order=XYCZT series_" + i);
     
     // Split the channels (if it contains channels)
     dimensions = Dimensions();
@@ -68,7 +66,7 @@ function SplitSeries(lifPath, i) {
 }
 
 // Function to save the series with a clean name
-function SaveSeries(outputDir, lifName) {
+function SaveSeries(outputDir, lifName, exportCount) {
     channels = getList("image.titles"); // List of all open channels
     
     // Get series title
@@ -85,14 +83,16 @@ function SaveSeries(outputDir, lifName) {
     	savePath = outputDir + File.separator + cleanSeriesName + "_C" + (j+1) + ".tif";
     	saveAs("Tiff", savePath);
     	print("Saved to: " + savePath);
-
-//    	// Log the export
-//    	logExport(logFilename, lifName, cleanSeriesName, savePath, dimensions);
+        
+        // Bookkeeping: count exports
+        exportCount = exportCount + 1;
 
     	// Close the image to free memory
     	close();
     }
+    return exportCount;    
 }
+
 
 // ================== Execution ==================
 
@@ -116,8 +116,14 @@ lifNameArr = split(lifPath, File.separator);
 lifName = lifNameArr[lengthOf(lifNameArr)-1];
 lifName = replace(lifName, ".lif", "");
 
-//// Create log file
-//logFilename = createLogFile(logDir, lifName);
+// Create log file
+logFilename = logDir + File.separator + "export_log.csv";
+if (!File.exists(logFilename)) {
+    createLogFile(logFilename);
+}
+else {
+    print("Log file exists: " + logFilename);
+}
 
 // Get the number of series in the LIF
 run("Bio-Formats Macro Extensions");
@@ -125,13 +131,20 @@ Ext.setId(lifPath);
 Ext.getSeriesCount(seriesCount);
 print("Found " + seriesCount + " series in file.");
 
+// Initialize exported count
+exportCount = 0;
+
 // Loop through each series
 for (i = 0; i < seriesCount; i++) {
     // Set current series
     Ext.setSeries(i);
     dimensions = SplitSeries(lifPath, i);
-    SaveSeries(outputDir, lifName);
+    exportCount = SaveSeries(outputDir, lifName, exportCount);
 }
+
+// Log the export
+logExport(logFilename, lifName, seriesCount, exportCount);
+print("Exported " + exportCount + " images from " + seriesCount + " series.");
 
 // Close Bio-Formats Macro Extensions
 Ext.close();
