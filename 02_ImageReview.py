@@ -4,11 +4,13 @@ from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk, ImageSequence
 from datetime import datetime
 
+# Class for reviewing multi-layer TIFF images
 class TIFFReviewer:
     def __init__(self, root):
-        self.root = root
+        self.root = root # Main window
         self.root.title("TIFF Reviewer")
 
+        # State variables
         self.folder = None
         self.files = []
         self.all_files = []
@@ -19,12 +21,13 @@ class TIFFReviewer:
         self.log_file = None
 
         # UI Elements
-        self.canvas = tk.Label(root)
+        self.canvas = tk.Label(root) # Image display area
         self.canvas.pack()
 
-        self.controls = tk.Frame(root)
+        self.controls = tk.Frame(root) # Control buttons frame
         self.controls.pack(fill=tk.X)
 
+        # Buttons for folder selection and sorting
         tk.Button(self.controls, text="Open Folder", command=self.open_folder).pack(side=tk.LEFT, padx=5)
         tk.Button(self.controls, text="Accept", bg="lightgreen", command=lambda: self.sort_file("accepted")).pack(side=tk.RIGHT, padx=5)
         tk.Button(self.controls, text="Decline", bg="tomato", command=lambda: self.sort_file("declined")).pack(side=tk.RIGHT, padx=5)
@@ -43,6 +46,7 @@ class TIFFReviewer:
         self.root.bind("<A>", lambda e: self.sort_file("accepted"))
         self.root.bind("<D>", lambda e: self.sort_file("declined"))
 
+    # Function to open folder and prepare files for review
     def open_folder(self):
         folder = filedialog.askdirectory()
         if not folder:
@@ -68,7 +72,7 @@ class TIFFReviewer:
                         if parts and parts[0]:
                             reviewed.add(parts[0])
             except Exception as e:
-                messagebox.showwarning("Log read error", f"Could not read existing log file:\n{e}")
+                messagebox.showwarning("Log read error", f"Could not read existing log file:\n{e}") # proceed as if no log
 
         # Save reviewed file names into separate list
         self.reviewed_files = sorted(list(reviewed))
@@ -120,13 +124,15 @@ class TIFFReviewer:
             except Exception as e:
                 messagebox.showwarning("Log write error", f"Could not create log file:\n{e}")
             self.files = all_files.copy()
-
+        
+        # Start reviewing 
         self.index = 0
         if not self.files:
             messagebox.showinfo("No files", "No image files found in folder")
             return
         self.show_file()
 
+    # Load all frames of the TIFF image
     def load_frames(self, path):
         self.frames = []
         img = Image.open(path)
@@ -135,6 +141,7 @@ class TIFFReviewer:
         self.frame_index = 0
         self.scrollbar.config(to=max(0, len(self.frames)-1))
 
+    # Function to display current file
     def show_file(self):
         if self.index < 0 or self.index >= len(self.files):
             messagebox.showinfo("Done", "All files reviewed!")
@@ -145,15 +152,18 @@ class TIFFReviewer:
         self.show_frame()
         self.update_progress()
 
+    # Function to display current frame based on scrollbar
     def show_frame(self):
         if self.frames:
             self.canvas.config(image=self.frames[self.frame_index])
             self.scrollbar.set(self.frame_index)
-
+    
+    # Function to handle scrollbar movement
     def scroll_frame(self, val):
         self.frame_index = int(val)
         self.show_frame()
 
+    # Function to sort file based on user decision
     def sort_file(self, decision):
         if self.log_file:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -162,7 +172,8 @@ class TIFFReviewer:
                     log.write(f"{self.files[self.index]},{decision},{timestamp}\n")
             except Exception as e:
                 messagebox.showwarning("Log write error", f"Could not write to log file:\n{e}")
-
+        
+        # Move to next file
         self.index += 1
         if self.index < len(self.files):
             self.show_file()
@@ -170,12 +181,14 @@ class TIFFReviewer:
             messagebox.showinfo("Done", "All files reviewed!")
             self.canvas.config(image='')
             self.progress_label.config(text="Review complete")
-
+    
+    # Update progress label
     def update_progress(self):
         total = len(self.files)
         current = self.index + 1
         self.progress_label.config(text=f"Item {current}/{total}")
 
+# Main application loop
 if __name__ == "__main__":
     root = tk.Tk()
     app = TIFFReviewer(root)
