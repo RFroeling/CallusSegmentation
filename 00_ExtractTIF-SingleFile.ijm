@@ -73,7 +73,6 @@ function SaveSeries(outputDir, lifName, exportCount, i) {
     Ext.getSeriesName(seriesName);
     seriesName_arr = split(seriesName, "/");
     cleanSeriesName = seriesName_arr[lengthOf(seriesName_arr)-1];
- // Might be cause for weird naming
 	
 	// Save each open channel
 	for (j = 0; j < channels.length; j++) {
@@ -105,7 +104,7 @@ lifPath = File.openDialog("Select LIF file");
 lifDir = File.getDirectory(lifPath);
 parentDir = File.getParent(lifDir);
 outputDir = parentDir +  "/01_tif";
-logDir = parentDir + "/_logs";
+logDir = outputDir + "/logs";
 
 // Check and create directories
 makeDir(outputDir);
