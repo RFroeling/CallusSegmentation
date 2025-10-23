@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk, ImageSequence
 from datetime import datetime
+import pandas as pd
 
 # Class for reviewing multi-layer TIFF images
 class TIFFReviewer:
@@ -19,6 +20,7 @@ class TIFFReviewer:
         self.frames = []
         self.frame_index = 0
         self.log_file = None
+        self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
 
         # UI Elements
         self.canvas = tk.Label(root) # Image display area
@@ -54,25 +56,26 @@ class TIFFReviewer:
         self.folder = folder
 
         # Gather all image files in folder
-        exts = (".tif", ".tiff")
-        all_files = [f for f in os.listdir(self.folder) if f.lower().endswith(exts)]
+        all_files = [f for f in os.listdir(self.folder) if f.lower().endswith(".tif")]
         all_files.sort()
         self.all_files = all_files
 
         # Prepare log path and read existing log if present
-        self.log_file = os.path.join(self.folder, "review_log.txt")
+        self.log_file = os.path.join(self.folder, "review_log.csv")
         reviewed = set()
         if os.path.exists(self.log_file):
             try:
-                with open(self.log_file, "r", encoding="utf-8") as log:
-                    # skip header if present
-                    header = log.readline()
-                    for line in log:
-                        parts = line.strip().split(",")
-                        if parts and parts[0]:
-                            reviewed.add(parts[0])
+                self.df = pd.read_csv(self.log_file, dtype=str)
+                # Ensure columns present
+                required = ["FileName", "Decision", "Timestamp"]
+                for col in required:
+                    if col not in self.df.columns:
+                        self.df[col] = ""
+                self.df = self.df[required]
+                reviewed = set(self.df["FileName"].dropna().astype(str).tolist())
             except Exception as e:
-                messagebox.showwarning("Log read error", f"Could not read existing log file:\n{e}") # proceed as if no log
+                messagebox.showwarning("Log read error", f"Could not read existing log file:\n{e}")
+                self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
 
         # Save reviewed file names into separate list
         self.reviewed_files = sorted(list(reviewed))
@@ -91,14 +94,14 @@ class TIFFReviewer:
                 )
                 if resp:
                     # Reset log and review all files
+                    self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
                     try:
-                        with open(self.log_file, "w", encoding="utf-8") as log:
-                            log.write("File,Decision,Timestamp\n")
+                        self.df.to_csv(self.log_file, index=False)
                     except Exception as e:
                         messagebox.showwarning("Log write error", f"Could not reset log file:\n{e}")
                     self.files = all_files.copy()
                 else:
-                    # Only review new files, keep existing log (append mode later)
+                    # Only review new files, keep existing log
                     self.files = new_files
             else:
                 # No new files
@@ -107,9 +110,9 @@ class TIFFReviewer:
                     "All files in the folder are already reviewed.\nDo you want to re-review all files?"
                 )
                 if resp:
+                    self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
                     try:
-                        with open(self.log_file, "w", encoding="utf-8") as log:
-                            log.write("File,Decision,Timestamp\n")
+                        self.df.to_csv(self.log_file, index=False)
                     except Exception as e:
                         messagebox.showwarning("Log write error", f"Could not reset log file:\n{e}")
                     self.files = all_files.copy()
@@ -118,9 +121,9 @@ class TIFFReviewer:
                     return
         else:
             # No existing log; create one and review all files
+            self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
             try:
-                with open(self.log_file, "w", encoding="utf-8") as log:
-                    log.write("File,Decision,Timestamp\n")
+                self.df.to_csv(self.log_file, index=False)
             except Exception as e:
                 messagebox.showwarning("Log write error", f"Could not create log file:\n{e}")
             self.files = all_files.copy()
@@ -167,9 +170,16 @@ class TIFFReviewer:
     def sort_file(self, decision):
         if self.log_file:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            fname = self.files[self.index]
+            # Update dataframe: if exists, replace; else append
+            if not self.df.empty and fname in self.df["FileName"].values:
+                self.df.loc[self.df["FileName"] == fname, ["Decision", "Timestamp"]] = [decision, timestamp]
+            else:
+                new_row = {"FileName": fname, "Decision": decision, "Timestamp": timestamp}
+                self.df = pd.concat([self.df, pd.DataFrame([new_row])], ignore_index=True)
+            # Immediately write to disk
             try:
-                with open(self.log_file, "a", encoding="utf-8") as log:
-                    log.write(f"{self.files[self.index]},{decision},{timestamp}\n")
+                self.df.to_csv(self.log_file, index=False)
             except Exception as e:
                 messagebox.showwarning("Log write error", f"Could not write to log file:\n{e}")
         
