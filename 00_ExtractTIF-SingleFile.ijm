@@ -105,7 +105,7 @@ lifPath = File.openDialog("Select LIF file");
 lifDir = File.getDirectory(lifPath);
 parentDir = File.getParent(lifDir);
 outputDir = parentDir +  "/01_tif";
-logDir = outputDir + "/logs";
+logDir = parentDir + "/_logs";
 
 // Check and create directories
 makeDir(outputDir);
