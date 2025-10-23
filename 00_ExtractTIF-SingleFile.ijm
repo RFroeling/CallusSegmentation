@@ -16,17 +16,18 @@ function makeDir(dir) {
 // Function to get current timestamp as string
 function getTimestamp() {
     getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-    TimeString = "" + year;
+    TimeString = "" + year + "-";
+    month = month+1; // From index to month number
     if (month<10) {TimeString = TimeString+"0";}
-    TimeString = TimeString+month+1;
+    TimeString = TimeString + month + "-";
     if(dayOfMonth<10) {TimeString = TimeString+"0";}
-    TimeString = TimeString+dayOfMonth+"_";
+    TimeString = TimeString + dayOfMonth + " ";
     if (hour<10) {TimeString = TimeString+"0";}
-    TimeString = TimeString+hour;
+    TimeString = TimeString + hour + ":";
     if (minute<10) {TimeString = TimeString+"0";}
-    TimeString = TimeString+minute;
+    TimeString = TimeString + minute + ":";
     if (second<10) {TimeString = TimeString+"0";}
-    TimeString = TimeString+second;
+    TimeString = TimeString + second;
     return TimeString;
 }
 
@@ -55,34 +56,42 @@ function logExport(logFilename, lifName, seriesName, outputPath, dimensions) {
 // Function to split series and save
 function SplitSeries(lifPath, i) {
     // Open the series
-    run("Bio-Formats Importer", "open=[" + lifPath + "] autoscale color_mode=Default view=Hyperstack stack_order=XYCZT series_" + i);
+    run("Bio-Formats Importer", "open=[" + lifPath + "] autoscale color_mode=Default view=Hyperstack stack_order=XYCZT series_" + i+1);
     
     // Split the channels (if it contains channels)
     dimensions = Dimensions();
     channels = dimensions[2];
     if (channels > 1) {
-    	run("Make Substack...", "channels=1");
-    }
+    	run("Split Channels");
+    	}
     return dimensions;
 }
 
 // Function to save the series with a clean name
-function SaveSeries(outputDir, logFilename, lifName) {
+function SaveSeries(outputDir, lifName) {
+    channels = getList("image.titles"); // List of all open channels
+    
     // Get series title
     Ext.getSeriesName(seriesName);
     seriesName_arr = split(seriesName, "/");
     cleanSeriesName = seriesName_arr[lengthOf(seriesName_arr)-1];
+ // Might be cause for weird naming
+	
+	// Save each open channel
+	for (j = 0; j < channels.length; j++) {
+    	selectImage(channels[j]);
+	
+    	// Save the series as TIFF
+    	savePath = outputDir + File.separator + cleanSeriesName + "_C" + (j+1) + ".tif";
+    	saveAs("Tiff", savePath);
+    	print("Saved to: " + savePath);
 
-    // Save the series as TIFF
-    savePath = outputDir + File.separator + cleanSeriesName + ".tif";
-    saveAs("Tiff", savePath);
-    print("Saved to: " + savePath);
+//    	// Log the export
+//    	logExport(logFilename, lifName, cleanSeriesName, savePath, dimensions);
 
-    // Log the export
-    logExport(logFilename, lifName, cleanSeriesName, savePath, dimensions);
-
-    // Close the image to free memory
-    close("*");
+    	// Close the image to free memory
+    	close();
+    }
 }
 
 // ================== Execution ==================
@@ -107,8 +116,8 @@ lifNameArr = split(lifPath, File.separator);
 lifName = lifNameArr[lengthOf(lifNameArr)-1];
 lifName = replace(lifName, ".lif", "");
 
-// Create log file
-logFilename = createLogFile(logDir, lifName);
+//// Create log file
+//logFilename = createLogFile(logDir, lifName);
 
 // Get the number of series in the LIF
 run("Bio-Formats Macro Extensions");
@@ -121,7 +130,7 @@ for (i = 0; i < seriesCount; i++) {
     // Set current series
     Ext.setSeries(i);
     dimensions = SplitSeries(lifPath, i);
-    SaveSeries(outputDir, logFilename, lifName);
+    SaveSeries(outputDir, lifName);
 }
 
 // Close Bio-Formats Macro Extensions
