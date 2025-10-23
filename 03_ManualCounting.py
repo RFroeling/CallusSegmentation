@@ -68,6 +68,7 @@ class ManualCounter:
         if not folder:
             return
         self.folder = folder
+        self.parent = os.path.dirname(folder)
 
         # Gather all image files in folder
         all_files = [f for f in os.listdir(self.folder) if f.lower().endswith(".tif")]
@@ -75,7 +76,7 @@ class ManualCounter:
         self.all_files = all_files.copy()
 
         # Check for review_log.csv
-        review_log_path = os.path.join(self.folder, "review_log.csv")
+        review_log_path = os.path.join(self.parent, "_logs", "review_log.csv")
         if not os.path.exists(review_log_path):
             messagebox.showerror(
                 "Review log missing",
@@ -119,7 +120,7 @@ class ManualCounter:
             return
 
         # Prepare metric log path and load existing entries if present
-        self.metric_log_file = os.path.join(self.folder, "metric_log.csv")
+        self.metric_log_file = os.path.join(self.parent, "_logs", "metric_log.csv")
         reviewed = set()
         if os.path.exists(self.metric_log_file):
             try:

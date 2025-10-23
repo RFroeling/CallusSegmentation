@@ -54,6 +54,7 @@ class TIFFReviewer:
         if not folder:
             return
         self.folder = folder
+        self.parent = os.path.dirname(folder)
 
         # Gather all image files in folder
         all_files = [f for f in os.listdir(self.folder) if f.lower().endswith(".tif")]
@@ -61,7 +62,7 @@ class TIFFReviewer:
         self.all_files = all_files
 
         # Prepare log path and read existing log if present
-        self.log_file = os.path.join(self.folder, "review_log.csv")
+        self.log_file = os.path.join(self.parent, "_logs", "review_log.csv")
         reviewed = set()
         if os.path.exists(self.log_file):
             try:
