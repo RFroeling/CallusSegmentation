@@ -20,7 +20,10 @@ class ManualCounter:
         self.frames = []
         self.frame_index = 0
         self.metric_log_file = None
-        self.df = pd.DataFrame(columns=["FileName","Timestamp","SizeX","SizeY","SizeZ","CellCount","State"])
+        self.df = pd.DataFrame(columns=[
+            "FileName", "Timestamp", "ID", "SizeX", "SizeY", "SizeZ",
+            "Line", "Age", "CellCount", "State"
+        ])
 
         # UI Elements
         self.canvas = tk.Label(root) # Image display area
@@ -67,13 +70,52 @@ class ManualCounter:
         self.folder = folder
 
         # Gather all image files in folder
-        exts = (".tif", ".tiff", ".png")
-        all_files = [f for f in os.listdir(self.folder) if f.lower().endswith(exts)]
+        all_files = [f for f in os.listdir(self.folder) if f.lower().endswith(".tif")]
         all_files.sort()
         self.all_files = all_files.copy()
 
-        if not all_files:
-            messagebox.showinfo("No files", "No image files found in folder")
+        # Check for review_log.csv
+        review_log_path = os.path.join(self.folder, "review_log.csv")
+        if not os.path.exists(review_log_path):
+            messagebox.showerror(
+                "Review log missing",
+                "No 'review_log.csv' found in this folder.\nPlease finish reviewing first."
+            )
+            return
+
+        # Read review log and filter accepted files
+        try:
+            review_df = pd.read_csv(review_log_path, dtype=str)
+            # Ensure columns present
+            required = ["FileName", "Decision", "Timestamp"]
+            for col in required:
+                if col not in review_df.columns:
+                    review_df[col] = ""
+            # All reviewed files (accepted or declined)
+            reviewed_files = set(review_df["FileName"].dropna().astype(str).tolist())
+            # Only accepted files
+            accepted_files = review_df[review_df["Decision"] == "accepted"]["FileName"].dropna().astype(str).tolist()
+        except Exception as e:
+            messagebox.showerror(
+                "Review log error",
+                f"Could not read 'review_log.csv':\n{e}\nPlease finish reviewing first."
+            )
+            return
+
+        # Exception: more images in folder than reviewed
+        if len(all_files) > len(reviewed_files):
+            messagebox.showerror(
+                "Unreviewed images",
+                "There are more image files in the folder than reviewed files in 'review_log.csv'.\n"
+                "Please finish reviewing all images first."
+            )
+            return
+
+        # Only use accepted files for counting
+        self.files = [f for f in all_files if f in accepted_files]
+
+        if not self.files:
+            messagebox.showinfo("No accepted files", "No accepted image files found for counting.")
             return
 
         # Prepare metric log path and load existing entries if present
@@ -82,74 +124,24 @@ class ManualCounter:
         if os.path.exists(self.metric_log_file):
             try:
                 self.df = pd.read_csv(self.metric_log_file, dtype=str)
-                # ensure columns present
-                required = ["FileName","Timestamp","SizeX","SizeY","SizeZ","CellCount","State"]
+                required = ["FileName","Timestamp","ID","SizeX","SizeY","SizeZ","Line","Age","CellCount","State"]
                 for col in required:
                     if col not in self.df.columns:
                         self.df[col] = ""
-                # normalize types as string for ease of use
                 self.df = self.df[required]
                 reviewed = set(self.df["FileName"].dropna().astype(str).tolist())
             except Exception as e:
                 messagebox.showwarning("Log read error", f"Could not read existing metric_log.csv:\n{e}")
-                # fall back to empty df
-                self.df = pd.DataFrame(columns=["FileName","Timestamp","SizeX","SizeY","SizeZ","CellCount","State"])
-
-        # Determine new files
-        new_files = [f for f in all_files if f not in reviewed]
-
-        # If a log exists and there are new files, ask whether to re-review all or only new ones
-        if reviewed:
-            if new_files:
-                resp = messagebox.askyesno(
-                    "Existing metric log",
-                    f"A metric log was found with {len(reviewed)} reviewed file(s).\n"
-                    f"{len(new_files)} file(s) are new in the folder.\n\n"
-                    "Re-review all files? (Yes = all files, No = only new files)"
-                )
-                if resp:
-                    # Reset log (clear dataframe and file) and review all files
-                    self.df = pd.DataFrame(columns=["FileName","Timestamp","SizeX","SizeY","SizeZ","CellCount","State"])
-                    try:
-                        self.df.to_csv(self.metric_log_file, index=False)
-                    except Exception as e:
-                        messagebox.showwarning("Log write error", f"Could not reset metric_log.csv:\n{e}")
-                    self.files = all_files.copy()
-                else:
-                    # Only review new files, keep existing log
-                    self.files = new_files
-            else:
-                # No new files
-                resp = messagebox.askyesno(
-                    "No new files",
-                    "All files in the folder are already reviewed.\nDo you want to re-review all files?"
-                )
-                if resp:
-                    # Reset log and re-review
-                    self.df = pd.DataFrame(columns=["FileName","Timestamp","SizeX","SizeY","SizeZ","CellCount","State"])
-                    try:
-                        self.df.to_csv(self.metric_log_file, index=False)
-                    except Exception as e:
-                        messagebox.showwarning("Log write error", f"Could not reset metric_log.csv:\n{e}")
-                    self.files = all_files.copy()
-                else:
-                    messagebox.showinfo("Nothing to do", "No new files to review.")
-                    return
+                self.df = pd.DataFrame(columns=["FileName","Timestamp","ID","SizeX","SizeY","SizeZ","Line","Age","CellCount","State"])
         else:
-            # No existing log; create one and review all files
-            self.df = pd.DataFrame(columns=["FileName","Timestamp","SizeX","SizeY","SizeZ","CellCount","State"])
+            self.df = pd.DataFrame(columns=["FileName","Timestamp","ID","SizeX","SizeY","SizeZ","Line","Age","CellCount","State"])
             try:
                 self.df.to_csv(self.metric_log_file, index=False)
             except Exception as e:
                 messagebox.showwarning("Log write error", f"Could not create metric_log.csv:\n{e}")
-            self.files = all_files.copy()
 
         # Start reviewing 
         self.index = 0
-        if not self.files:
-            messagebox.showinfo("No files", "No image files selected for review")
-            return
-        # ensure reviewed_files list for reference
         self.reviewed_files = list(reviewed)
         self.show_file()
 
@@ -225,21 +217,56 @@ class ManualCounter:
             return False
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # prepare row as strings
+        # --- Extract ID, Line, Age from filename ---
+        # Assumes filename format: date1_date2_line_otherparts.tif
+        # date1 and date2 are in yymmdd format (e.g. 230101)
+        # ID: first three items separated by '_'
+        # Line: third item
+        # Age: difference in days between date2 and date1 (as int)
+        id_str, line_str, age_val = "", "", ""
+        try:
+            parts = os.path.splitext(fname)[0].split("_")  # strip extension first
+            if len(parts) >= 4:
+                id_str = "_".join(parts[:4])
+                line_str = parts[2]
+                # parse yymmdd dates -> compute difference in days
+                try:
+                    d1 = datetime.strptime(parts[0], "%y%m%d").date()
+                    d2 = datetime.strptime(parts[1], "%y%m%d").date()
+                    age_days = (d2 - d1).days
+                    age_val = int(age_days)
+                except Exception:
+                    age_val = ""
+            else:
+                id_str = ""
+                line_str = ""
+                age_val = ""
+        except Exception:
+            id_str = ""
+            line_str = ""
+            age_val = ""
+
+        # prepare row as strings / values
         row = {
             "FileName": fname,
             "Timestamp": timestamp,
+            "ID": id_str,
             "SizeX": int(size_x),
             "SizeY": int(size_y),
             "SizeZ": int(size_z),
+            "Line": line_str,
+            "Age": age_val,
             "CellCount": ("" if count_text == "" else int(count_text)),
             "State": state
         }
 
         # update dataframe: if exists, replace; else append
         if not self.df.empty and fname in self.df["FileName"].values:
-            self.df.loc[self.df["FileName"] == fname, ["Timestamp","SizeX","SizeY","SizeZ","CellCount","State"]] = [
-                row["Timestamp"], row["SizeX"], row["SizeY"], row["SizeZ"], row["CellCount"], row["State"]
+            self.df.loc[self.df["FileName"] == fname, [
+                "Timestamp","ID","SizeX","SizeY","SizeZ","Line","Age","CellCount","State"
+            ]] = [
+                row["Timestamp"], row["ID"], row["SizeX"], row["SizeY"], row["SizeZ"],
+                row["Line"], row["Age"], row["CellCount"], row["State"]
             ]
         else:
             self.df = pd.concat([self.df, pd.DataFrame([row])], ignore_index=True)
