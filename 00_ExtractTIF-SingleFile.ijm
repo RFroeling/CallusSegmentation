@@ -47,14 +47,14 @@ function Dimensions(){
 // Function to append export info to log file
 function logExport(logFilename, lifName, seriesCount, exportCount) {
     exportTime = getTimestamp();
-    line = lifName + "," + exportTime + "," + seriesCount + "," + exportCount + "\n";
+    line = lifName + "," + exportTime + "," + seriesCount + "," + exportCount;
     File.append(line, logFilename);
 }
 
 // Function to split series and save
 function SplitSeries(lifPath, i) {
     // Open the series
-    run("Bio-Formats Importer", "open=[" + lifPath + "] autoscale color_mode=Default view=Hyperstack stack_order=XYCZT series_" + i);
+    run("Bio-Formats Importer", "open=[" + lifPath + "] autoscale color_mode=Default view=Hyperstack stack_order=XYCZT series_" + i+1);
     
     // Split the channels (if it contains channels)
     dimensions = Dimensions();
@@ -66,7 +66,7 @@ function SplitSeries(lifPath, i) {
 }
 
 // Function to save the series with a clean name
-function SaveSeries(outputDir, lifName, exportCount) {
+function SaveSeries(outputDir, lifName, exportCount, i) {
     channels = getList("image.titles"); // List of all open channels
     
     // Get series title
@@ -82,7 +82,7 @@ function SaveSeries(outputDir, lifName, exportCount) {
     	// Save the series as TIFF
     	savePath = outputDir + File.separator + cleanSeriesName + "_C" + (j+1) + ".tif";
     	saveAs("Tiff", savePath);
-    	print("Saved to: " + savePath);
+    	print("Saving series " + (i+1) + ": " + cleanSeriesName + "_C" + (j+1) + ".tif");
         
         // Bookkeeping: count exports
         exportCount = exportCount + 1;
@@ -129,7 +129,10 @@ else {
 run("Bio-Formats Macro Extensions");
 Ext.setId(lifPath);
 Ext.getSeriesCount(seriesCount);
+
+// Log messages
 print("Found " + seriesCount + " series in file.");
+print("====================================");
 
 // Initialize exported count
 exportCount = 0;
@@ -139,11 +142,11 @@ for (i = 0; i < seriesCount; i++) {
     // Set current series
     Ext.setSeries(i);
     dimensions = SplitSeries(lifPath, i);
-    exportCount = SaveSeries(outputDir, lifName, exportCount);
+    exportCount = SaveSeries(outputDir, lifName, exportCount, i);
 }
 
 // Log the export
-logExport(logFilename, lifName, seriesCount, exportCount);
+logExport(logFilename, lifName, seriesCount, exportCount);
 print("Exported " + exportCount + " images from " + seriesCount + " series.");
 
 // Close Bio-Formats Macro Extensions
