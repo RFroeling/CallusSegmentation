@@ -62,6 +62,20 @@ class ManualCounter:
         self.progress_label = tk.Label(root, text="No files loaded")
         self.progress_label.pack(pady=5)
 
+        # Key bindings
+        self.root.bind("<Return>", lambda e: self.save_and_next())
+        self.root.bind("<Tab>", lambda e: self.save_and_next())
+        self.root.bind("<Shift-Right>", lambda e: self.save_and_next())
+        self.root.bind("<Shift-Left>", lambda e: self.go_previous())
+
+        # Keybinds for navigating frame scrollbar
+        self.root.bind("<Left>", lambda e: self.scrollbar.set(max(0, self.frame_index - 1)))
+        self.root.bind("<Right>", lambda e: self.scrollbar.set(min(len(self.frames)-1, self.frame_index + 1)))
+        
+        # New bindings for radio button navigation
+        self.root.bind("<Up>", self.navigate_type_up)
+        self.root.bind("<Down>", self.navigate_type_down)
+
     # Function to open folder and prepare files for review
     def open_folder(self):
         folder = filedialog.askdirectory()
@@ -151,7 +165,10 @@ class ManualCounter:
         self.frames = []
         img = Image.open(path)
         for frame in ImageSequence.Iterator(img):
-            self.frames.append(ImageTk.PhotoImage(frame.copy().convert("RGB")))
+            # Convert to RGB and resize to 1024x1024 with antialiasing
+            frame = frame.convert("RGB")
+            frame = frame.resize((512, 512), Image.Resampling.NEAREST)
+            self.frames.append(ImageTk.PhotoImage(frame))
         self.frame_index = 0
         self.scrollbar.config(to=max(0, len(self.frames)-1))
 
@@ -181,6 +198,10 @@ class ManualCounter:
         else:
             self.count_var.set("")
             self.type_var.set("Compact")
+    
+        # Add this line to focus the count entry field
+        self.count_entry.focus_set()
+        self.count_entry.select_range(0, tk.END)
 
     # Function to display current frame based on scrollbar
     def show_frame(self):
@@ -314,6 +335,21 @@ class ManualCounter:
         total = len(self.files)
         current = self.index + 1
         self.progress_label.config(text=f"Item {current}/{total}")
+
+    # New methods for radio button navigation
+    def navigate_type_up(self, event):
+        current = self.type_var.get()
+        if current == "Other":
+            self.type_var.set("Loose")
+        elif current == "Loose":
+            self.type_var.set("Compact")
+                
+    def navigate_type_down(self, event):
+        current = self.type_var.get()
+        if current == "Compact":
+            self.type_var.set("Loose")
+        elif current == "Loose":
+            self.type_var.set("Other")
 
 # Main application loop
 if __name__ == "__main__":
