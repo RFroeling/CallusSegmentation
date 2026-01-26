@@ -1,9 +1,11 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk, ImageSequence
+from PIL import Image, ImageTk
 from datetime import datetime
 import pandas as pd
+import numpy as np
+import tifffile as tiff
 
 # Class for reviewing multi-layer TIFF images
 class TIFFReviewer:
@@ -37,6 +39,10 @@ class TIFFReviewer:
         # Scrollbar for frames
         self.scrollbar = tk.Scale(self.controls, from_=0, to=0, orient=tk.HORIZONTAL, command=self.scroll_frame)
         self.scrollbar.pack(fill=tk.X, expand=True, padx=5)
+
+        # Filename label
+        self.filename_label = tk.Label(root, text="")
+        self.filename_label.pack(pady=5)
 
         # Progress label
         self.progress_label = tk.Label(root, text="No files loaded")
@@ -139,9 +145,39 @@ class TIFFReviewer:
     # Load all frames of the TIFF image
     def load_frames(self, path):
         self.frames = []
-        img = Image.open(path)
-        for frame in ImageSequence.Iterator(img):
-            self.frames.append(ImageTk.PhotoImage(frame.copy().convert("RGB")))
+        # Read TIFF with tifffile (handles multi-page, multi-channel, various dtypes)
+        arr = tiff.imread(path)
+        # Normalize to a list of frame arrays
+        frames_list = []
+        if arr.ndim == 2:
+            frames_list = [arr]
+        elif arr.ndim == 3:
+            # Heuristic: (pages, H, W) vs (H, W, C)
+            if arr.shape[0] > 1 and arr.shape[0] != 3:
+                # treat as pages
+                frames_list = [arr[i] for i in range(arr.shape[0])]
+            else:
+                # treat as single image with channels
+                frames_list = [arr]
+        elif arr.ndim == 4:
+            # (pages, H, W, C)
+            frames_list = [arr[i] for i in range(arr.shape[0])]
+        else:
+            frames_list = [arr]
+
+        for f in frames_list:
+            # Convert 16-bit grayscale -> 8-bit
+            if f.dtype == np.uint16 and f.ndim == 2:
+                # Option A: simple down-shift (fast)
+                arr8 = (f >> 8).astype(np.uint8)
+                im8 = Image.fromarray(arr8, mode="L")
+            elif f.ndim == 2:
+                im8 = Image.fromarray(f.astype(np.uint8), mode="L")
+            else:
+                # color / multi-channel: ensure uint8 and create RGB/RGBA image
+                im8 = Image.fromarray(f.astype(np.uint8))
+            self.frames.append(ImageTk.PhotoImage(im8))
+
         self.frame_index = 0
         self.scrollbar.config(to=max(0, len(self.frames)-1))
 
@@ -150,9 +186,12 @@ class TIFFReviewer:
         if self.index < 0 or self.index >= len(self.files):
             messagebox.showinfo("Done", "All files reviewed!")
             self.progress_label.config(text="Review complete")
+            self.filename_label.config(text="")  # clear filename when done
             return
         path = os.path.join(self.folder, self.files[self.index])
         self.load_frames(path)
+        # display current filename
+        self.filename_label.config(text=self.files[self.index])
         self.show_frame()
         self.update_progress()
 
@@ -192,6 +231,7 @@ class TIFFReviewer:
             messagebox.showinfo("Done", "All files reviewed!")
             self.canvas.config(image='')
             self.progress_label.config(text="Review complete")
+            self.filename_label.config(text="")  # clear filename when finished
     
     # Update progress label
     def update_progress(self):

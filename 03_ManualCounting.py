@@ -1,9 +1,11 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk, ImageSequence
+from PIL import Image, ImageTk
 from datetime import datetime
 import pandas as pd
+import numpy as np
+import tifffile as tiff
 
 # Class for reviewing multi-layer TIFF images
 class ManualCounter:
@@ -57,6 +59,10 @@ class ManualCounter:
         tk.Radiobutton(type_frame, text="Compact", variable=self.type_var, value="Compact").pack(anchor="w")
         tk.Radiobutton(type_frame, text="Loose",    variable=self.type_var, value="Loose").pack(anchor="w")
         tk.Radiobutton(type_frame, text="Other",    variable=self.type_var, value="Other").pack(anchor="w")
+
+        # Filename label (shows currently displayed image)
+        self.filename_label = tk.Label(root, text="", font=("TkDefaultFont", 10, "bold"))
+        self.filename_label.pack(pady=(6,0))
 
         # Progress label
         self.progress_label = tk.Label(root, text="No files loaded")
@@ -163,12 +169,42 @@ class ManualCounter:
     # Load all frames of the TIFF image
     def load_frames(self, path):
         self.frames = []
-        img = Image.open(path)
-        for frame in ImageSequence.Iterator(img):
-            # Convert to RGB and resize to 1024x1024 with antialiasing
-            frame = frame.convert("RGB")
-            frame = frame.resize((512, 512), Image.Resampling.NEAREST)
-            self.frames.append(ImageTk.PhotoImage(frame))
+        # Read TIFF with tifffile (handles multi-page, multi-channel, various dtypes)
+        arr = tiff.imread(path)
+        # Normalize to a list of frame arrays
+        frames_list = []
+        if arr.ndim == 2:
+            frames_list = [arr]
+        elif arr.ndim == 3:
+            # Heuristic: (pages, H, W) vs (H, W, C)
+            if arr.shape[0] > 1 and arr.shape[0] != 3:
+                # treat as pages
+                frames_list = [arr[i] for i in range(arr.shape[0])]
+            else:
+                # treat as single image with channels
+                frames_list = [arr]
+        elif arr.ndim == 4:
+            # (pages, H, W, C)
+            frames_list = [arr[i] for i in range(arr.shape[0])]
+        else:
+            frames_list = [arr]
+
+        for f in frames_list:
+            # Convert 16-bit grayscale -> 8-bit, or ensure uint8 for color
+            if f.dtype == np.uint16 and f.ndim == 2:
+                arr8 = (f >> 8).astype(np.uint8)
+                im8 = Image.fromarray(arr8, mode="L")
+            elif f.ndim == 2:
+                im8 = Image.fromarray(f.astype(np.uint8), mode="L")
+            else:
+                im8 = Image.fromarray(f.astype(np.uint8))
+
+            # Convert to RGB for consistent display (matches previous behavior),
+            # then resize to 512x512 (previous code used NEAREST).
+            im8 = im8.convert("RGB")
+            im8 = im8.resize((512, 512), Image.Resampling.NEAREST)
+            self.frames.append(ImageTk.PhotoImage(im8))
+
         self.frame_index = 0
         self.scrollbar.config(to=max(0, len(self.frames)-1))
 
@@ -177,9 +213,12 @@ class ManualCounter:
         if self.index < 0 or self.index >= len(self.files):
             messagebox.showinfo("Done", "All files reviewed!")
             self.progress_label.config(text="Review complete")
+            self.filename_label.config(text="")  # clear filename when done
             return
         path = os.path.join(self.folder, self.files[self.index])
         self.load_frames(path)
+        # display current filename
+        self.filename_label.config(text=self.files[self.index])
         self.show_frame()
         self.update_progress()
         # populate input fields if there is a saved entry in dataframe
@@ -228,15 +267,42 @@ class ManualCounter:
             except ValueError:
                 messagebox.showwarning("Invalid input", "Cell count must be an integer or left empty.")
                 return False
-        # get image sizes
+        # get image sizes using tifffile (more robust for multi-page/multi-channel)
         path = os.path.join(self.folder, fname)
         try:
-            with Image.open(path) as img:
-                size_x, size_y = img.size
-                size_z = getattr(img, "n_frames", 1)
-        except Exception as e:
-            messagebox.showwarning("Image error", f"Could not read image sizes for {fname}:\n{e}")
-            return False
+            arr = tiff.imread(path)
+            if arr.ndim == 2:
+                size_y, size_x = arr.shape
+                size_z = 1
+            elif arr.ndim == 3:
+                # distinguish (pages, H, W) vs (H, W, C)
+                if arr.shape[0] > 1 and arr.shape[0] != 3:
+                    size_z = arr.shape[0]
+                    size_y = arr.shape[1]
+                    size_x = arr.shape[2]
+                else:
+                    # single frame with channels
+                    size_z = 1
+                    size_y = arr.shape[0]
+                    size_x = arr.shape[1]
+            elif arr.ndim == 4:
+                # (pages, H, W, C)
+                size_z = arr.shape[0]
+                size_y = arr.shape[1]
+                size_x = arr.shape[2]
+            else:
+                # fallback
+                size_y, size_x = (arr.shape[-2], arr.shape[-1])
+                size_z = 1
+        except Exception:
+            # fallback to PIL if tifffile fails
+            try:
+                with Image.open(path) as img:
+                    size_x, size_y = img.size
+                    size_z = getattr(img, "n_frames", 1)
+            except Exception as e:
+                messagebox.showwarning("Image error", f"Could not read image sizes for {fname}:\n{e}")
+                return False
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # --- Extract ID, Line, Age from filename ---
@@ -316,6 +382,7 @@ class ManualCounter:
             messagebox.showinfo("Done", "All files processed!")
             self.canvas.config(image='')
             self.progress_label.config(text="Processing complete")
+            self.filename_label.config(text="")  # clear filename on completion
 
     def go_previous(self):
         if not self.files:
