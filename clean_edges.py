@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -5,6 +6,13 @@ import numpy as np
 from segmentation.cleaning import *
 from segmentation.models import load_h5, save_h5
 from segmentation.views import cleaning_comparison_plot
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 data_path = Path('.data/02_labels')
 key = 'segmentation'
@@ -64,11 +72,26 @@ def cleanup_segmentation(path: Path, key: str) -> tuple[np.ndarray, np.ndarray]:
 
 
 def main():    
+    failed_files = []
+    
     for h5_file in data_path.glob('*.h5'):
-        print(f"Processing {h5_file.name}...")
-        segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, key)
-        cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save=True)
-        save_h5(h5_file, cleaned_segmentation, key='cleaned')
+        try:
+            logger.info(f"Processing {h5_file.name}...")
+            segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, key)
+            cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save=True)
+            save_h5(h5_file, cleaned_segmentation, key='cleaned')
+            logger.info(f"✓ {h5_file.name} processed successfully")
+        except (FileNotFoundError, KeyError) as e:
+            logger.error(f"✗ {h5_file.name}: {e}")
+            failed_files.append((h5_file.name, str(e)))
+        except Exception as e:
+            logger.error(f"✗ {h5_file.name}: Unexpected error: {type(e).__name__}: {e}")
+            failed_files.append((h5_file.name, str(e)))
+    
+    if failed_files:
+        logger.warning(f"{len(failed_files)} file(s) failed processing")
+    else:
+        logger.info("All files processed successfully!")
 
 
 if __name__ == "__main__":

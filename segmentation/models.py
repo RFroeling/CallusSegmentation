@@ -15,8 +15,18 @@ def load_h5(path: Path, key: str) -> np.ndarray:
 
     Returns: 
         np.ndarray: The loaded dataset.
+        
+    Raises:
+        KeyError: If the key doesn't exist in the file.
+        FileNotFoundError: If the file doesn't exist.
     """
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+    
     with h5py.File(path, 'r') as f:
+        if key not in f:
+            available_keys = list(f.keys())
+            raise KeyError(f"Key '{key}' not found in {path.name}. Available keys: {available_keys}")
         dataset = np.array(f[key])
 
     return dataset
