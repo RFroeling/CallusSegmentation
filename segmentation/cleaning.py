@@ -304,6 +304,41 @@ def get_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int], strictn
     return labels_to_remove
 
 
+def get_recursive_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int], strictness: float=2) -> set[int]:
+    """Recursively identify labels to remove based on proximity to edge labels.
+    
+    Iteratively applies get_edge_label_neighbors, expanding the set of labels to remove
+    by treating previously identified neighbors as new "edge labels" in subsequent iterations.
+    Continues until the set of labels to remove no longer changes.
+    
+    Args:
+        dataset (np.ndarray): Labeled image where each tissue has a unique integer label.
+        edge_labels (set[int]): Set of labels touching the volume boundaries.
+        strictness (float): Multiplier for removal threshold (see get_edge_label_neighbors).
+            Defaults to 2.0.
+    
+    Returns:
+        set[int]: Set of all labels that should be removed (includes edge labels and their neighbors).
+    """
+    labels_to_remove = edge_labels.copy()
+    
+    while True:
+        # Find neighbors of current labels_to_remove set
+        new_neighbors = get_edge_label_neighbors(dataset, labels_to_remove, strictness)
+        
+        # Add newly found neighbors to the removal set
+        updated_labels = labels_to_remove | new_neighbors
+        
+        # If the set didn't change, we've reached convergence
+        if updated_labels == labels_to_remove:
+            break
+        
+        labels_to_remove = updated_labels
+    
+    return labels_to_remove
+
+
+
 def remove_labels(dataset: np.ndarray, labels: set[int]) -> np.ndarray:
     """Remove all voxels belonging to labels in the provided set.
     

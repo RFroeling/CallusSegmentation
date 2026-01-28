@@ -24,7 +24,7 @@ def post_cleanup(dataset: np.ndarray) -> np.ndarray:
         np.ndarray: Cleaned labeled image with border-touching labels removed.
     """
     edge_labels = get_edge_labels(dataset)
-    edge_edge_labels = get_edge_label_neighbors(dataset, edge_labels)
+    edge_edge_labels = get_recursive_edge_label_neighbors(dataset, edge_labels)
     labels_to_remove = edge_labels.union(edge_edge_labels) # Combine both sets of labels to remove
 
     cleaned = remove_labels(dataset, labels_to_remove)
