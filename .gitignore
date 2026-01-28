@@ -1,5 +1,8 @@
-*.png
-*.nd2
-_*.py
-*.pyc
-.*/
+# Virtual environment
+.venv/
+
+# Testdata
+.data/
+
+# Cache files
+__pycache__/
