@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-data_path = Path('.data/02_labels')
+data_path = Path('/media/beta/rikfroeling/experiments/251201_CallusSegmentation/trained_workflow_output')
 key = 'segmentation'
 
 
