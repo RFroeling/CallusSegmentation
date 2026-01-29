@@ -1,5 +1,5 @@
-"""Module that provides function to deal with file handling for segmentation cleanup."""
-
+"""Module that provides functionality to deal with .h5 datasets."""
+from os.path import getsize
 from pathlib import Path
 
 import h5py
@@ -54,3 +54,54 @@ def save_h5(path: Path, stack: np.ndarray, key: str, mode: str = "a") -> None:
         if key in f:
             del f[key]
         f.create_dataset(key, data=stack, compression="gzip")
+
+
+def get_h5_files(folder_path: Path) -> list[Path]:
+    """Get all .h5 files in a folder.
+    
+    Args:
+        folder_path (Path): Path to the folder to search.
+    
+    Returns:
+        list[Path]: List of .h5 file paths.
+    """
+    h5_files = list(folder_path.glob('*.h5'))
+    return sorted(h5_files)
+
+
+def print_h5_metrics(file_path: Path) -> None:
+    """Inspect and print metrics about a .h5 file.
+    
+    Args:
+        file_path (Path): Path to the .h5 file to inspect.
+    """
+    # File size
+    file_size_mb = getsize(file_path) / (1024 ** 2)
+    
+    print(f"\n{'='*60}")
+    print(f"File: {file_path.name}")
+    print(f"{'='*60}")
+    print(f"Path: {file_path}")
+    print(f"Size: {file_size_mb:.2f} MB")
+    print(f"\n{'Datasets:':<50}")
+    print(f"{'-'*60}")
+    
+    with h5py.File(file_path, 'r') as f:
+        # Print all keys and their properties
+        for key in f.keys():
+            dataset = f[key]
+            shape = dataset.shape
+            dtype = dataset.dtype
+            
+            print(f"\nKey: {key}")
+            print(f"  Shape: {shape}")
+            print(f"  Data type: {dtype}")
+            print(f"  Size: {dataset.nbytes / (1024 ** 2):.2f} MB")
+            
+            # Print statistics for numeric datasets
+            if dataset.dtype.kind in ['f', 'i', 'u']:  # float, signed int, unsigned int
+                print(f"  Min: {dataset[()].min():.4f}")
+                print(f"  Max: {dataset[()].max():.4f}")
+                print(f"  Mean: {dataset[()].mean():.4f}")
+    
+    print(f"\n{'='*60}\n")

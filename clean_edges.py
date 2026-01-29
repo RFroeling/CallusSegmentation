@@ -4,8 +4,8 @@ from pathlib import Path
 import numpy as np
 
 from segmentation.cleaning import *
-from segmentation.models import load_h5, save_h5
 from segmentation.views import cleaning_comparison_plot
+from segmentation.h5 import load_h5, save_h5, get_h5_files
 
 # Configure logging
 logging.basicConfig(
@@ -14,7 +14,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-data_path = Path('/media/beta/rikfroeling/experiments/251201_CallusSegmentation/trained_workflow_output')
+data_path = Path('.data/02_labels')
+# data_path = Path('/media/beta/rikfroeling/experiments/251201_CallusSegmentation/trained_workflow_output')
 key = 'segmentation'
 
 
@@ -73,8 +74,10 @@ def cleanup_segmentation(path: Path, key: str) -> tuple[np.ndarray, np.ndarray]:
 
 def main():    
     failed_files = []
+
+    h5_files = get_h5_files(data_path)
     
-    for h5_file in data_path.glob('*.h5'):
+    for h5_file in h5_files:
         try:
             logger.info(f"Processing {h5_file.name}...")
             segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, key)
