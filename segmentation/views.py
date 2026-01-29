@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-
+matplotlib.use('agg') # Set MPL backend to only write to file on Linux
 
 def display_XY_slice(dataset: np.ndarray, LUT: str ='gray', show=True) -> None:
     z = dataset.shape[0] // 2
