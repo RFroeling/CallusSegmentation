@@ -91,5 +91,6 @@ def cleaning_comparison_plot(dataset: np.ndarray, cleaned_dataset: np.ndarray, p
         save_path = path.parent / 'comparison_plots'
         save_path.mkdir(exist_ok=True)
         plt.savefig(save_path / f'comparison_{path.stem}.png', dpi=300)
+        plt.close()
     else:
         plt.show()
