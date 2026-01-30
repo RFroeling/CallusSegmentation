@@ -1,7 +1,9 @@
+import os
 import logging
 from pathlib import Path
 
 import numpy as np
+from dotenv import load_dotenv
 
 from segmentation.cleaning import *
 from segmentation.views import cleaning_comparison_plot
@@ -14,9 +16,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-data_path = Path('.data/02_labels')
-# data_path = Path('/media/beta/rikfroeling/experiments/251201_CallusSegmentation/trained_workflow_output')
-key = 'segmentation'
+# Configure environment
+load_dotenv()
+data_path_env = os.getenv('DATA_PATH')
+if not data_path_env or data_path_env == "path/to/your/data":
+    logger.error("Environment variable DATA_PATH is not set. Please configure .env with DATA_PATH pointing to your data directory.")
+    raise SystemExit("Missing required environment variable: DATA_PATH")
+
+data_path = Path(data_path_env)
+if not data_path.exists():
+    logger.error(f"DATA_PATH '{data_path}' does not exist. Check your .env configuration.")
+    raise SystemExit(f"DATA_PATH does not exist: {data_path}")
+
+key = os.getenv('KEY')
+if not key or key == "your_segmentation_key":
+    logger.error("Environment variable KEY is not set. Please configure .env with KEY specifying the dataset key to use.")
+    raise SystemExit("Missing required environment variable: KEY")
 
 
 def post_cleanup(dataset: np.ndarray) -> np.ndarray:
