@@ -6,3 +6,4 @@
 
 # Cache files
 __pycache__/
+.env
