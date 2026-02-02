@@ -233,7 +233,7 @@ class ImageReviewer(tk.Tk):
         self.reviewed_files = sorted(reviewed)
 
         # Determine new files
-        new_files = [f for f in all_files if f not in reviewed]
+        new_files = [f for f in all_files if f.name not in reviewed]
 
         # If a log exists and there are new files, ask whether to re-review all or only new ones
         if reviewed:
@@ -342,7 +342,7 @@ class ImageReviewer(tk.Tk):
         """ Function to sort file based on user decision"""
         if self.log_file:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            fname = self.files[self.index]
+            fname = self.files[self.index].name
             # Update dataframe: if exists, replace; else append
             if not self.df.empty and fname in self.df["FileName"].values:
                 self.df.loc[self.df["FileName"] == fname, ["Decision", "Timestamp"]] = [decision, timestamp]
