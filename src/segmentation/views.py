@@ -111,6 +111,7 @@ class ImageReviewer(tk.Tk):
         self.geometry("700x700")
         self.ui_elements()
         self.state_variables()
+        self.set_icon()
 
         
     def ui_elements(self):
@@ -178,6 +179,13 @@ class ImageReviewer(tk.Tk):
         self.frame_index = 0
         self.log_file = None
         self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
+
+    
+    def set_icon(self):
+        parent_dir = Path(__file__).parents[2]
+        icon_path = parent_dir / "img" / "icon.ico"
+        if icon_path.exists():
+            self.iconbitmap(icon_path)
 
 
     def open_folder(self):
