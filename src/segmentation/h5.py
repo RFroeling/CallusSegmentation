@@ -56,6 +56,13 @@ def save_h5(path: Path, stack: np.ndarray, key: str, mode: str = "a") -> None:
         f.create_dataset(key, data=stack, compression="gzip")
 
 
+def move_h5(file: Path, dest_path: Path) -> None:
+        
+    destination = dest_path / file.name
+
+    file.rename(destination)
+
+
 def get_h5_files(folder_path: Path) -> list[Path]:
     """Get all .h5 files in a folder.
     
