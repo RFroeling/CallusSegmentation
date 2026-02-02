@@ -310,6 +310,10 @@ class ImageReviewer(tk.Tk):
             self.filename_label.config(text="")  # clear filename when done
             return
         
+        if not self.folder:
+            messagebox.showerror("Error", "No folder selected")
+            return
+        
         # Load and display image
         image_path = self.folder / self.files[self.index]
         try:
