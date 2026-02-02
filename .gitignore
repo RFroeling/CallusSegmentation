@@ -8,3 +8,6 @@ _*
 # Cache files
 __pycache__/
 .env
+
+# Icons
+*.png
