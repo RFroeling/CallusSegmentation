@@ -13,3 +13,9 @@ dependencies = [
     "scikit-image>=0.26.0",
     "scipy>=1.17.0",
 ]
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocstrings[python]>=1.0.2",
+]
