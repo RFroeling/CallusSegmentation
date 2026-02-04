@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from segmentation.h5 import get_h5_files, print_h5_metrics
+from segmentation.models import get_h5_files, print_h5_metrics
 
 
 def main():
