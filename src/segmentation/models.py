@@ -1,13 +1,19 @@
 """Module that provides functionality to deal with .h5 datasets."""
+import logging
 from os.path import getsize
 from pathlib import Path
 from typing import Optional
 
 import h5py
 import numpy as np
+from bioio import BioImage
+import bioio_lif
+
+# Define logger
+logger = logging.getLogger(__name__)
 
 
-def load_h5(path: Path, key: str) -> np.ndarray:
+def load_h5(path: Path, key: Optional[str]) -> np.ndarray:
     """Load a dataset as a numpy array using context manager by given key from a .h5 file.
 
     Args: 
@@ -116,3 +122,46 @@ def print_h5_metrics(file_path: Path) -> None:
                 print(f"  Mean: {dataset[()].mean():.4f}")
     
     print(f"\n{'='*60}\n")
+
+
+def read_lif(filename: Path) -> BioImage:
+    """Reads a .lif file into a BioImage object.
+
+    Args:
+        filename (Path): Path to the .lif file.
+
+    Returns:
+        BioImage: BioImage representation of .lif file
+
+    Raises:
+        ValueError: If provided filetype is not a .lif file.
+    """
+    if filename.suffix != '.lif':
+        raise ValueError(f'Expected a .lif file, got {filename.suffix}')
+
+    return BioImage(filename, reader=bioio_lif.Reader)
+
+
+def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
+    """Iterates over all scenes in a BioImage object and saves each of them as ome.tiff
+    while preserving physical pixel dimensions.
+
+    Supports 5D (TCZYX) images, but provides no option to produce subsets. That means that
+    dimensonality in == dimensionality out. When single timepoint and single channel images
+    are required, such as for PlantSeg analysis, they should also be provided as such.
+
+    Args:
+        bioimg (BioImage): BioImage object (image) containing at least 1 scene.
+        output_dir (Path): Directory where scenes are stored.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    logger.info(f'Found {len(bioimg.scenes)} scenes in BioImage: \n')
+
+    for i, scene in enumerate(bioimg.scenes):
+        path = output_dir / f'{scene}.ome.tiff'
+        try:
+            bioimg.save(path, select_scenes=[scene])
+            logger.info(f"Converted image {i +1}/{len(bioimg.scenes)}: {scene}.ome.tiff")
+        except Exception as e:
+            logger.error(f"Unexpected error: {type(e).__name__}: {e} \n Could not save scene {scene}.")
