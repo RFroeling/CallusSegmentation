@@ -1,0 +1,50 @@
+"""Converts a (series of) .lif files to OME.tiff files"""
+
+from os import getenv
+from pathlib import Path
+import logging
+
+from dotenv import load_dotenv
+
+from segmentation.models import read_lif, save_scenes_as_ome_tiff
+from segmentation.logging_config import setup_logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
+setup_logging()
+
+# Configure environment
+load_dotenv()
+input_env = getenv('LIF_PATH')
+if not input_env:
+    logger.error("Environment variable LIF_PATH is not set. Please configure .env with LIF_PATH pointing to your data directory.")
+    raise SystemExit("Missing required environment variable: LIF_PATH")
+
+output_env = getenv('OME_TIFF_PATH')
+if not output_env:
+    logger.error("Environment variable OME_TIFF_PATH is not set. Please configure .env with OME_TIFF_PATH pointing to your output directory.")
+    raise SystemExit("Missing required environment variable: OME_TIFF_PATH")
+
+input = Path(input_env)
+out_dir = Path(output_env)
+
+
+def convert(file, out_dir):
+    logger.info(f'Converting the contents of {file.name}:')
+    bioimg = read_lif(file)
+    save_scenes_as_ome_tiff(bioimg, out_dir)
+    logging.info(f'Done with {file.name}! \n')
+
+
+def main():
+    if input.is_file():
+        convert(input, out_dir)
+
+    if input.is_dir():
+        files = input.glob('*.lif')
+        for file in files:
+            convert(file, out_dir)
+
+
+if __name__ == '__main__':
+    main()
