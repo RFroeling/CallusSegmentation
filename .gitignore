@@ -3,7 +3,8 @@
 
 # Testdata
 .data/
-_*
+*.lif
+*.png
 
 # Cache files
 __pycache__/
