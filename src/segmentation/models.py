@@ -184,6 +184,6 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
         path = output_dir / f'{safe_scene}.ome.tiff'
         try:
             bioimg.save(path, select_scenes=[scene])
-            logger.info(f"Converted image {i +1}/{len(bioimg.scenes)}: {scene}.ome.tiff")
+            logger.info(f"Converted image {i +1}/{len(bioimg.scenes)}: {safe_scene}.ome.tiff")
         except Exception as e:
-            logger.error(f"Unexpected error: {type(e).__name__}: {e} \n Could not save scene {scene}.")
+            logger.error(f"Unexpected error: {type(e).__name__}: {e} \n Could not save scene {safe_scene}.")
