@@ -106,7 +106,7 @@ def print_h5_metrics(file_path: Path) -> None:
     with h5py.File(file_path, 'r') as f:
         # Print all keys and their properties
         for key in f.keys():
-            dataset = f[key]
+            dataset = np.array(f[key])
             shape = dataset.shape
             dtype = dataset.dtype
             
