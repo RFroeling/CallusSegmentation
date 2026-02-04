@@ -1,6 +1,7 @@
 """Module that provides functionality to deal with .h5 datasets."""
 from os.path import getsize
 from pathlib import Path
+from typing import Optional
 
 import h5py
 import numpy as np
@@ -22,6 +23,9 @@ def load_h5(path: Path, key: str) -> np.ndarray:
     """
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
+
+    if key is None or key == "":
+        raise ValueError("Key is required to load a dataset from a .h5 file")
     
     with h5py.File(path, 'r') as f:
         if key not in f:
@@ -32,7 +36,7 @@ def load_h5(path: Path, key: str) -> np.ndarray:
     return dataset
 
 
-def save_h5(path: Path, stack: np.ndarray, key: str, mode: str = "a") -> None:
+def save_h5(path: Path, stack: np.ndarray, key: Optional[str], mode: str = "a") -> None:
     """
     Create a dataset inside a h5 file from a numpy array.
 

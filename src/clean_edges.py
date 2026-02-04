@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from segmentation.cleaning import *
 from segmentation.views import cleaning_comparison_plot
-from segmentation.h5 import load_h5, save_h5, get_h5_files
+from segmentation.models import load_h5, save_h5, get_h5_files
 
 # Configure logging
 logging.basicConfig(
@@ -56,7 +56,7 @@ def post_cleanup(dataset: np.ndarray) -> np.ndarray:
     return cleaned
 
 
-def cleanup_segmentation(path: Path, key: str) -> tuple[np.ndarray, np.ndarray]:
+def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.ndarray]:
     """Removes unwanted labels bordering the main tissue.
 
     Performs the following actions:
