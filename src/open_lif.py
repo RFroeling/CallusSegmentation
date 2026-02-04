@@ -21,4 +21,3 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
 
 bioimg = read_lif(lif_path)
 save_scenes_as_ome_tiff(bioimg, out_dir)
-

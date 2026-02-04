@@ -1,6 +1,6 @@
 import os
-import logging
 from pathlib import Path
+import logging
 
 import numpy as np
 from dotenv import load_dotenv
@@ -8,13 +8,11 @@ from dotenv import load_dotenv
 from segmentation.cleaning import *
 from segmentation.views import cleaning_comparison_plot
 from segmentation.models import load_h5, save_h5, get_h5_files
+from segmentation.logging_config import setup_logging
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
+setup_logging()
 
 # Configure environment
 load_dotenv()

@@ -7,6 +7,7 @@ from skimage.feature import peak_local_max
 from skimage.segmentation import watershed
 from skimage.measure import regionprops_table
 
+
 def make_binary(dataset: np.ndarray, threshold: float=0) -> np.ndarray:
     """Convert labeled dataset to binary image.
 
