@@ -4,6 +4,9 @@ nav:
   - Overview: index.md
   - API Reference: API.md
 
+theme:
+  name: material
+
 plugins:
   - search
   - mkdocstrings:
