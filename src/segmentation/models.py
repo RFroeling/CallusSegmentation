@@ -142,6 +142,27 @@ def read_lif(filename: Path) -> BioImage:
     return BioImage(filename, reader=bioio_lif.Reader)
 
 
+def safe_scenename(scene:str) -> str:
+    """.lif files taken using navigator functionality might containt slashes in their scenenames, which makes them annoying to save.
+    
+    This function returns a safe scenename that can be used for saving.
+    
+    Args:
+        scene (str): Scenename
+        
+    Returns:
+        str: Safe scenename
+    """
+    if '/' in scene:
+        safe_scene = scene.split('/')[-1]
+    elif '\\' in scene:
+        safe_scene = scene.split('\\')[-1]
+    else:
+        safe_scene = scene
+
+    return safe_scene
+
+
 def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
     """Iterates over all scenes in a BioImage object and saves each of them as ome.tiff
     while preserving physical pixel dimensions.
@@ -159,7 +180,8 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
     logger.info(f'Found {len(bioimg.scenes)} scenes in BioImage: \n')
 
     for i, scene in enumerate(bioimg.scenes):
-        path = output_dir / f'{scene}.ome.tiff'
+        safe_scene = safe_scenename(scene)
+        path = output_dir / f'{safe_scene}.ome.tiff'
         try:
             bioimg.save(path, select_scenes=[scene])
             logger.info(f"Converted image {i +1}/{len(bioimg.scenes)}: {scene}.ome.tiff")
