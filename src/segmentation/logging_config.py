@@ -1,9 +1,8 @@
-"""Convenience method for configuring logger within scripts. Simply import
-module and add:
+"""Convenience method for configuring logger within scripts. Simply import module and add:
 
 setup_logging()
-
 """
+
 import logging
 
 def setup_logging(level=logging.INFO):
