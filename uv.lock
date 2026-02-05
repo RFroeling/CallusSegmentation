@@ -117,6 +117,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
+    { name = "plantseg" },
     { name = "python-dotenv" },
     { name = "scikit-image" },
     { name = "scipy" },
@@ -137,6 +138,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.8" },
     { name = "numpy", specifier = ">=2.4.1" },
     { name = "pandas", specifier = ">=3.0.0" },
+    { name = "plantseg", git = "https://github.com/kreshuklab/plant-seg.git" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "scikit-image", specifier = ">=0.26.0" },
     { name = "scipy", specifier = ">=1.17.0" },
@@ -1149,6 +1151,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/5f/74/bc3f671997158aef1
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/88/550d41e81e6d43335603a960cd9c75c1d88f9cf01bc9d4ee8e86290aba7d/pint-0.25.2-py3-none-any.whl", hash = "sha256:ca35ab1d8eeeb6f7d9942b3cb5f34ca42b61cdd5fb3eae79531553dcca04dda7", size = 306762, upload-time = "2025-11-06T22:08:07.745Z" },
 ]
+
+[[package]]
+name = "plantseg"
+version = "2.0.0rc12"
+source = { git = "https://github.com/kreshuklab/plant-seg.git#93b1e62b9aea0da1168670ef5d774a81e99f5868" }
 
 [[package]]
 name = "platformdirs"
