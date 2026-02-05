@@ -5,8 +5,8 @@ import logging
 import numpy as np
 from dotenv import load_dotenv
 
-from core.cleaning import *
-from core.views import cleaning_comparison_plot
+from segmentation.core.cleaning import *
+from segmentation.core.views import cleaning_comparison_plot
 from segmentation.core.io import load_h5, save_h5, get_h5_files
 from segmentation.core.logger import setup_logging
 

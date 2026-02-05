@@ -1,4 +1,4 @@
-from core.views import ImageReviewer
+from segmentation.core.views import ImageReviewer
 
 if __name__ == '__main__':
     viewer = ImageReviewer()
