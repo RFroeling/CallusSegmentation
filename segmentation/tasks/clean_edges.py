@@ -5,10 +5,10 @@ import logging
 import numpy as np
 from dotenv import load_dotenv
 
-from segmentation.cleaning import *
-from segmentation.views import cleaning_comparison_plot
-from segmentation.models import load_h5, save_h5, get_h5_files
-from segmentation.logging_config import setup_logging
+from core.cleaning import *
+from core.views import cleaning_comparison_plot
+from segmentation.core.io import load_h5, save_h5, get_h5_files
+from segmentation.core.logger import setup_logging
 
 # Configure logging
 logger = logging.getLogger(__name__)

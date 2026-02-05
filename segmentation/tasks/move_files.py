@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-from segmentation.models import move_h5
+from segmentation.core.io import move_h5
 
 src_path = Path("W:\\AFSG\\Groups\\BIC\\Bulk\\Rik\\Experiments\\251201_CallusSegmentation\\stellaris\\plantseg_labels\\comparison_plots")
 dest_path = src_path.parents[1] / 'curated_labels'

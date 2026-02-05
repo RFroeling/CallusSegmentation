@@ -6,8 +6,8 @@ import logging
 
 from dotenv import load_dotenv
 
-from segmentation.models import read_lif, save_scenes_as_ome_tiff
-from segmentation.logging_config import setup_logging
+from segmentation.core.io import read_lif, save_scenes_as_ome_tiff
+from segmentation.core.logger import setup_logging
 
 # Configure logger
 logger = logging.getLogger(__name__)
