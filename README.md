@@ -52,7 +52,7 @@ The package provides a command-line interface with several subcommands:
 ### Convert LIF files to OME-TIFF
 
 ```bash
-uv run -m run_segmentation.py --convert
+uv run run_segmentation.py --convert
 ```
 
 Removes all LIF files in `LIF_PATH` (specified in `.env`) and saves their scenes as separate OME-TIFF files in `OME_TIFF_PATH`.
@@ -60,7 +60,7 @@ Removes all LIF files in `LIF_PATH` (specified in `.env`) and saves their scenes
 ### Run PlantSeg segmentation
 
 ```bash
-uv run -m run_segmentation.py --plantseg path/to/config.yaml
+uv run run_segmentation.py --plantseg path/to/config.yaml
 ```
 
 Execute PlantSeg segmentation workflow using a configuration YAML file. See [PlantSeg documentation](https://github.com/kreshuklab/plant-seg/tree/2.0.0rc12) for configuration details.
@@ -68,7 +68,7 @@ Execute PlantSeg segmentation workflow using a configuration YAML file. See [Pla
 ### Clean segmentation edges
 
 ```bash
-uv run -m run_segmentation.py --clean
+uv run run_segmentation.py --clean
 ```
 
 Post-process segmented images from `DATA_PATH` to remove edge artifacts using watershed segmentation and connected component analysis. Outputs cleaned H5 files and comparison visualizations.
@@ -76,7 +76,7 @@ Post-process segmented images from `DATA_PATH` to remove edge artifacts using wa
 ### Interactive Image Review
 
 ```bash
-uv run -m run_segmentation.py --review
+uv run run_segmentation.py --review
 ```
 
 Launch an interactive GUI for reviewing segmentation results. Use this to validate automated results and identify any artifacts.
@@ -84,7 +84,7 @@ Launch an interactive GUI for reviewing segmentation results. Use this to valida
 ### Inspect H5 Files
 
 ```bash
-uv run -m run_segmentation.py --inspect
+uv run run_segmentation.py --inspect
 ```
 
 Print the structure and metadata of H5 segmentation files to the console for debugging and verification.
