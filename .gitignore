@@ -8,3 +8,6 @@ test*.yaml
 # Cache files
 __pycache__/
 .env
+
+# Imagery
+*.ai
