@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "plantseg@git+https://github.com/kreshuklab/plant-seg.git",
+    "plantseg@git+https://github.com/kreshuklab/plant-seg.git@v1.8.0",
     "bioio>=3.2.0",
     "bioio-lif>=1.4.2",
     "bioio-ome-tiff>=1.4.0",
