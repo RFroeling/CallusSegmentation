@@ -187,7 +187,7 @@ class ImageReviewer(tk.Tk):
     def set_icon(self):
         parent_dir = Path(__file__).parents[2]
         icon_path = parent_dir / "img" / "icon.png"
-        
+
         if icon_path.exists():
             self.iconphoto(False, tk.PhotoImage(file=icon_path))
 
