@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 def create_parser():
     """Create and return the argument parser for the CLI."""
@@ -27,6 +28,12 @@ def create_parser():
         "-i",
         action='store_true',
         help="Inspects the contents of .h5 file, prints to console.",
+    )
+    mode.add_argument(
+        "--plantseg",
+        "-p",
+        type=Path,
+        help="Run PlantSeg workflow from YAML config file",
     )
     # Add arguments here if neccesary
     return arg_parser.parse_args()
@@ -60,6 +67,12 @@ def inspect_file():
     
     main()
 
+def run_plantseg_workflow(yaml_path: Path):
+    """Run a PlantSeg workflow based on config YAML"""
+    from segmentation.tasks.run_plantseg_workflow import main
+
+    main(yaml_path)
+
 
 def main():
     """Main function to parse arguments and call corresponding functionality."""
@@ -73,6 +86,8 @@ def main():
         convert_images()
     elif args.inspect:
         inspect_file()
+    elif args.plantseg:
+        run_plantseg_workflow(args.plantseg)
     else:
         raise ValueError(
             "Wrong arguments. Run `segmentation -h` to see the available options."
