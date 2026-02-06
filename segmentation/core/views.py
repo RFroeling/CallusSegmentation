@@ -92,6 +92,9 @@ def cleaning_comparison_plot(dataset: np.ndarray, cleaned_dataset: np.ndarray, p
     axes[1, 1].set_title('Cleaned YZ')
     
     if save:
+        import matplotlib as mpl
+        mpl.use('agg') # Non-interactive backend for writing to files
+        
         save_path = path.parent / 'comparison_plots'
         save_path.mkdir(exist_ok=True)
         plt.savefig(save_path / f'comparison_{path.stem}.png', dpi=300)
