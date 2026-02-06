@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from scipy import ndimage as ndi
 from skimage.feature import peak_local_max
-from skimage.segmentation import watershed
 from skimage.measure import regionprops_table
+from skimage.segmentation import watershed
 
 
 def make_binary(dataset: np.ndarray, threshold: float=0) -> np.ndarray:
@@ -22,7 +22,7 @@ def make_binary(dataset: np.ndarray, threshold: float=0) -> np.ndarray:
         np.ndarray: Binary image where foreground voxels are True, background voxels are False.
     """
     binary = dataset > threshold
-    
+
     return binary
 
 
@@ -43,7 +43,7 @@ def apply_watershed_segmentation(binary: np.ndarray, min_distance: int=4) -> np.
         np.ndarray: Labeled image where each tissue has a unique integer label.
     """
     dist = ndi.distance_transform_edt(binary)
-    
+
     # Find coordinates of local maxima
     coords = peak_local_max(
         dist,
@@ -89,7 +89,7 @@ def calculate_border_touch_fraction(binary: np.ndarray, tissues: np.ndarray, pro
         # Numerator: count voxels that are both in tissue AND on border
         # Denominator: count total voxels in tissue
         touch_frac.append((vox & border).sum() / vox.sum())
-    
+
     return np.array(touch_frac)
 
 
@@ -114,7 +114,7 @@ def calculate_distance_to_center(binary: np.ndarray, props: pd.DataFrame) -> np.
         (props["centroid-1"] - center[1])**2 +  # y-axis difference squared
         (props["centroid-2"] - center[2])**2    # x-axis difference squared
     )
-    
+
     return distances
 
 
@@ -143,7 +143,7 @@ def calculate_tissue_properties(binary: np.ndarray, tissues: np.ndarray) -> pd.D
             "bbox"
         ]
     ))
-    
+
     # Calculate border touch fraction and distance to center
     props["touch_frac"] = calculate_border_touch_fraction(binary, tissues, props)
     props["dist_center"] = calculate_distance_to_center(binary, props)
@@ -238,7 +238,7 @@ def get_edge_labels(dataset: np.ndarray) -> set[int]:
         set[int]: Set of labels that touch the volume boundaries.
     """
     edge_labels = set()
-    
+
     # Check all six faces of the 3D volume
     edge_labels.update(np.unique(dataset[0, :, :]))      # First z-plane
     edge_labels.update(np.unique(dataset[-1, :, :]))     # Last z-plane
@@ -246,7 +246,7 @@ def get_edge_labels(dataset: np.ndarray) -> set[int]:
     edge_labels.update(np.unique(dataset[:, -1, :]))     # Last y-plane
     edge_labels.update(np.unique(dataset[:, :, 0]))      # First x-plane
     edge_labels.update(np.unique(dataset[:, :, -1]))     # Last x-plane
-    
+
     return edge_labels
 
 
@@ -272,36 +272,36 @@ def get_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int], strictn
         set[int]: Set of neighbor labels that should be removed.
     """
     labels_to_remove = set()
-    
+
     # Find all neighbors of edge labels by dilating edge regions
     edge_mask = np.isin(dataset, list(edge_labels))
     dilated_edge = ndi.binary_dilation(edge_mask)
     neighbor_labels = set(np.unique(dataset[dilated_edge & (dataset != 0)])) - edge_labels
-    
+
     for neighbor in neighbor_labels:
         neighbor_mask = (dataset == neighbor)
-        
+
         # Count face contacts with edge labels and other labels
         faces_with_edge = 0
         faces_with_other = 0
-        
+
         # Check 6-connected neighbors (faces in 3D)
-        for shift, axis in [((1, 0, 0), 0), ((-1, 0, 0), 0), 
+        for shift, axis in [((1, 0, 0), 0), ((-1, 0, 0), 0),
                            ((0, 1, 0), 1), ((0, -1, 0), 1),
                            ((0, 0, 1), 2), ((0, 0, -1), 2)]:
             shifted_neighbor = np.roll(neighbor_mask, shift[axis], axis=axis)
-            
+
             # Count adjacency to edge labels
             faces_with_edge += (shifted_neighbor & edge_mask).sum()
-            
+
             # Count adjacency to other non-edge labels
             other_mask = (dataset != 0) & ~edge_mask & ~neighbor_mask
             faces_with_other += (shifted_neighbor & other_mask).sum()
-        
+
         # Remove if only touches edge labels or touches edge more than others
         if faces_with_other == 0 or faces_with_edge > strictness * faces_with_other:
             labels_to_remove.add(neighbor)
-    
+
     return labels_to_remove
 
 
@@ -322,20 +322,20 @@ def get_recursive_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int
         set[int]: Set of all labels that should be removed (includes edge labels and their neighbors).
     """
     labels_to_remove = edge_labels.copy()
-    
+
     while True:
         # Find neighbors of current labels_to_remove set
         new_neighbors = get_edge_label_neighbors(dataset, labels_to_remove, strictness)
-        
+
         # Add newly found neighbors to the removal set
         updated_labels = labels_to_remove | new_neighbors
-        
+
         # If the set didn't change, we've reached convergence
         if updated_labels == labels_to_remove:
             break
-        
+
         labels_to_remove = updated_labels
-    
+
     return labels_to_remove
 
 
@@ -351,10 +351,10 @@ def remove_labels(dataset: np.ndarray, labels: set[int]) -> np.ndarray:
         np.ndarray: Cleaned labeled image with specified labels removed.
     """
     cleaned = dataset.copy()
-    
+
     for label in labels:
         if label == 0:  # Skip background
             continue
         cleaned[dataset == label] = 0
-    
+
     return cleaned

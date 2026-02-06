@@ -1,14 +1,14 @@
 """Module containing the neccessary functions for visualization of segmentation cleanups."""
-from pathlib import Path
-from datetime import datetime
 import tkinter as tk
-from tkinter import messagebox, filedialog
-from PIL import Image, ImageTk
+from datetime import datetime
+from pathlib import Path
+from tkinter import filedialog, messagebox
 
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
+from PIL import Image, ImageTk
 
 
 def display_XY_slice(dataset: np.ndarray, LUT: str ='gray', show=True) -> None:
@@ -52,10 +52,10 @@ def create_random_colormap(num_labels: int) -> mcolors.ListedColormap:
     """
     # Generate random colors for each label
     colors = np.random.rand(num_labels, 3)
-    
+
     # Set the first color (label 0/background) to black
     colors[0] = [0, 0, 0]
-    
+
     return mcolors.ListedColormap(colors)
 
 
@@ -72,29 +72,29 @@ def cleaning_comparison_plot(dataset: np.ndarray, cleaned_dataset: np.ndarray, p
         save (bool): Whether to save the plot as a PNG file. Defaults to False.
     """
     _, axes = plt.subplots(2, 2, figsize=(12, 10))
-    
+
     z = dataset.shape[0] // 2
     x = dataset.shape[1] // 2
-    
+
     # Create random colormap for labeled images
     cmap = create_random_colormap(cleaned_dataset.max() + 1)
-    
+
     axes[0, 0].imshow(dataset[z], cmap=cmap)
     axes[0, 0].set_title('Original XY')
-    
+
     axes[0, 1].imshow(dataset[:, x, :], cmap=cmap)
     axes[0, 1].set_title('Original YZ')
-    
+
     axes[1, 0].imshow(cleaned_dataset[z], cmap=cmap)
     axes[1, 0].set_title('Cleaned XY')
-    
+
     axes[1, 1].imshow(cleaned_dataset[:, x, :], cmap=cmap)
     axes[1, 1].set_title('Cleaned YZ')
-    
+
     if save:
         import matplotlib as mpl
         mpl.use('agg') # Non-interactive backend for writing to files
-        
+
         save_path = path.parent / 'comparison_plots'
         save_path.mkdir(exist_ok=True)
         plt.savefig(save_path / f'comparison_{path.stem}.png', dpi=300)
@@ -116,10 +116,10 @@ class ImageReviewer(tk.Tk):
         self.state_variables()
         self.set_icon()
 
-        
+
     def ui_elements(self):
         """Creates all widgets and binds events."""
-        
+
         # --- Canvas for image display ---
         self.canvas = tk.Label(self, bg='lightgrey')
         self.canvas.pack(fill="both", expand=True, padx=5, pady=5)
@@ -183,7 +183,7 @@ class ImageReviewer(tk.Tk):
         self.log_file = None
         self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
 
-    
+
     def set_icon(self):
         parent_dir = Path(__file__).parents[2]
         icon_path = parent_dir / "img" / "icon.ico"
@@ -196,7 +196,7 @@ class ImageReviewer(tk.Tk):
         folder = filedialog.askdirectory()
         if not folder:
             return
-        
+
         self.folder = Path(folder)
         self.parent = self.folder.parent
 
@@ -217,7 +217,7 @@ class ImageReviewer(tk.Tk):
         if self.log_file.exists():
             try:
                 self.df = pd.read_csv(self.log_file, dtype=str)
-                
+
                 # Ensure columns present
                 for col in required_cols:
                     if col not in self.df.columns:
@@ -234,10 +234,10 @@ class ImageReviewer(tk.Tk):
 
             except Exception as e:
                 messagebox.showwarning(
-                    "Log read error", 
+                    "Log read error",
                     f"Could not read existing log file:\n{e}"
                 )
-                
+
                 self.df = pd.DataFrame(columns=required_cols)
 
         # Save reviewed file names into separate list
@@ -262,7 +262,7 @@ class ImageReviewer(tk.Tk):
                         self.df.to_csv(self.log_file, index=False)
                     except Exception as e:
                         messagebox.showwarning(
-                            "Log write error", 
+                            "Log write error",
                             f"Could not reset log file:\n{e}"
                         )
                     self.files = all_files.copy()
@@ -281,13 +281,13 @@ class ImageReviewer(tk.Tk):
                         self.df.to_csv(self.log_file, index=False)
                     except Exception as e:
                         messagebox.showwarning(
-                            "Log write error", 
+                            "Log write error",
                             f"Could not reset log file:\n{e}"
                         )
                     self.files = all_files.copy()
                 else:
                     messagebox.showinfo(
-                        "Nothing to do", 
+                        "Nothing to do",
                         "No new files to review."
                     )
                     return
@@ -302,17 +302,17 @@ class ImageReviewer(tk.Tk):
                     "Log create error",
                     f"Could nog create log file:\n{e}"
                 )
-        
+
             self.files = all_files.copy()
 
-        # Start reviewing 
+        # Start reviewing
         self.index = 0
         if not self.files:
             messagebox.showinfo("No files", "No image files found in folder")
             return
         self.show_file()
 
-    
+
     def show_file(self):
         """Function to display current file"""
         if self.index < 0 or self.index >= len(self.files):
@@ -320,33 +320,33 @@ class ImageReviewer(tk.Tk):
             self.progress_label.config(text="Review complete")
             self.filename_label.config(text="")  # clear filename when done
             return
-        
+
         if not self.folder:
             messagebox.showerror("Error", "No folder selected")
             return
-        
+
         # Load and display image
         image_path = self.folder / self.files[self.index]
         try:
             # Load image
             image = Image.open(image_path)
-            
+
             # Resize to fit canvas while maintaining aspect ratio
             canvas_width = self.canvas.winfo_width()
             canvas_height = self.canvas.winfo_height()
-            
+
             if canvas_width > 1:  # winfo_width returns 1 if widget not yet rendered
                 image.thumbnail((canvas_width - 10, canvas_height - 10), Image.Resampling.LANCZOS)
-            
+
             # Convert to PhotoImage and display
             self.photo_image = ImageTk.PhotoImage(image)
             self.canvas.config(image=self.photo_image)
-            
+
             # Update labels
             filename = self.files[self.index].name
             self.filename_label.config(text=filename)
             self.update_progress()
-            
+
         except Exception as e:
             messagebox.showerror("Error", f"Could not load image:\n{e}")
             self.index += 1
@@ -369,10 +369,10 @@ class ImageReviewer(tk.Tk):
                 self.df.to_csv(self.log_file, index=False)
             except Exception as e:
                 messagebox.showwarning(
-                    "Log write error", 
+                    "Log write error",
                     f"Could not write to log file:\n{e}"
                 )
-        
+
         # Move to next file
         self.index += 1
         if self.index < len(self.files):

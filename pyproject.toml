@@ -45,3 +45,6 @@ explicit = true
 name = "pytorch-cu126"
 url = "https://download.pytorch.org/whl/cu126"
 explicit = true
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "UP", "A", "B", "SIM", "I"]

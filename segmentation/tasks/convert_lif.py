@@ -1,8 +1,8 @@
 """Converts a (series of) .lif files to OME.tiff files"""
 
+import logging
 from os import getenv
 from pathlib import Path
-import logging
 
 from dotenv import load_dotenv
 

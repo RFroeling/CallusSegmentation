@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 
+
 def create_parser():
     """Create and return the argument parser for the CLI."""
     arg_parser = argparse.ArgumentParser()
@@ -64,7 +65,7 @@ def convert_images():
 def inspect_file():
     """Inspect the content of user specified file(s)"""
     from segmentation.tasks.inspect_h5 import main
-    
+
     main()
 
 def run_plantseg_workflow(yaml_path: Path):

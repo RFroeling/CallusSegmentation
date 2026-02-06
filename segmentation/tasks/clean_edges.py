@@ -1,14 +1,14 @@
+import logging
 import os
 from pathlib import Path
-import logging
 
 import numpy as np
 from dotenv import load_dotenv
 
 from segmentation.core.cleaning import *
-from segmentation.core.views import cleaning_comparison_plot
-from segmentation.core.io import load_h5, save_h5, get_h5_files
+from segmentation.core.io import get_h5_files, load_h5, save_h5
 from segmentation.core.logger import setup_logging
+from segmentation.core.views import cleaning_comparison_plot
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -85,11 +85,11 @@ def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.nd
     return dataset, cleaned_dataset
 
 
-def main():    
+def main():
     failed_files = []
 
     h5_files = get_h5_files(data_path)
-    
+
     for h5_file in h5_files:
         try:
             logger.info(f"Processing {h5_file.name}...")
@@ -103,7 +103,7 @@ def main():
         except Exception as e:
             logger.error(f"✗ {h5_file.name}: Unexpected error: {type(e).__name__}: {e}")
             failed_files.append((h5_file.name, str(e)))
-    
+
     if failed_files:
         logger.warning(f"{len(failed_files)} file(s) failed processing")
     else:

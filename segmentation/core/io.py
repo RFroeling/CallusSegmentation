@@ -2,18 +2,17 @@
 import logging
 from os.path import getsize
 from pathlib import Path
-from typing import Optional
 
+import bioio_lif
 import h5py
 import numpy as np
 from bioio import BioImage
-import bioio_lif
 
 # Define logger
 logger = logging.getLogger(__name__)
 
 
-def load_h5(path: Path, key: Optional[str]) -> np.ndarray:
+def load_h5(path: Path, key: str | None) -> np.ndarray:
     """Load a dataset as a numpy array using context manager by given key from a .h5 file.
 
     Args: 
@@ -32,7 +31,7 @@ def load_h5(path: Path, key: Optional[str]) -> np.ndarray:
 
     if key is None or key == "":
         raise ValueError("Key is required to load a dataset from a .h5 file")
-    
+
     with h5py.File(path, 'r') as f:
         if key not in f:
             available_keys = list(f.keys())
@@ -42,7 +41,7 @@ def load_h5(path: Path, key: Optional[str]) -> np.ndarray:
     return dataset
 
 
-def save_h5(path: Path, stack: np.ndarray, key: Optional[str], mode: str = "a") -> None:
+def save_h5(path: Path, stack: np.ndarray, key: str | None, mode: str = "a") -> None:
     """
     Create a dataset inside a h5 file from a numpy array.
 
@@ -67,7 +66,7 @@ def save_h5(path: Path, stack: np.ndarray, key: Optional[str], mode: str = "a") 
 
 
 def move_h5(file: Path, dest_path: Path) -> None:
-        
+
     destination = dest_path / file.name
 
     file.rename(destination)
@@ -94,7 +93,7 @@ def print_h5_metrics(file_path: Path) -> None:
     """
     # File size
     file_size_mb = getsize(file_path) / (1024 ** 2)
-    
+
     print(f"\n{'='*60}")
     print(f"File: {file_path.name}")
     print(f"{'='*60}")
@@ -102,25 +101,25 @@ def print_h5_metrics(file_path: Path) -> None:
     print(f"Size: {file_size_mb:.2f} MB")
     print(f"\n{'Datasets:':<50}")
     print(f"{'-'*60}")
-    
+
     with h5py.File(file_path, 'r') as f:
         # Print all keys and their properties
         for key in f.keys():
             dataset = np.array(f[key])
             shape = dataset.shape
             dtype = dataset.dtype
-            
+
             print(f"\nKey: {key}")
             print(f"  Shape: {shape}")
             print(f"  Data type: {dtype}")
             print(f"  Size: {dataset.nbytes / (1024 ** 2):.2f} MB")
-            
+
             # Print statistics for numeric datasets
             if dataset.dtype.kind in ['f', 'i', 'u']:  # float, signed int, unsigned int
                 print(f"  Min: {dataset[()].min():.4f}")
                 print(f"  Max: {dataset[()].max():.4f}")
                 print(f"  Mean: {dataset[()].mean():.4f}")
-    
+
     print(f"\n{'='*60}\n")
 
 
@@ -176,7 +175,7 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
         output_dir (Path): Directory where scenes are stored.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     logger.info(f'Found {len(bioimg.scenes)} scenes in BioImage: \n')
 
     for i, scene in enumerate(bioimg.scenes):
