@@ -3,12 +3,8 @@
 
 # Testdata
 .data/
-*.lif
-*.png
+test*.yaml
 
 # Cache files
 __pycache__/
 .env
-
-# Icons
-*.png

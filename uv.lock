@@ -146,7 +146,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.8" },
     { name = "numpy", specifier = ">=2.4.1" },
     { name = "pandas", specifier = ">=3.0.0" },
-    { name = "plantseg", git = "https://github.com/kreshuklab/plant-seg.git" },
+    { name = "plantseg", git = "https://github.com/kreshuklab/plant-seg.git?rev=2.0.0rc12" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "scikit-image", specifier = ">=0.26.0" },
     { name = "scipy", specifier = ">=1.17.0" },
@@ -1374,7 +1374,7 @@ wheels = [
 [[package]]
 name = "plantseg"
 version = "2.0.0rc12"
-source = { git = "https://github.com/kreshuklab/plant-seg.git#93b1e62b9aea0da1168670ef5d774a81e99f5868" }
+source = { git = "https://github.com/kreshuklab/plant-seg.git?rev=2.0.0rc12#93b1e62b9aea0da1168670ef5d774a81e99f5868" }
 
 [[package]]
 name = "platformdirs"
