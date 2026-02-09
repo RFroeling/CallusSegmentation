@@ -41,7 +41,43 @@ def load_h5(path: Path, key: str | None) -> np.ndarray:
     return dataset
 
 
-def save_h5(path: Path, stack: np.ndarray, key: str | None, mode: str = "a") -> None:
+def read_h5_voxel_size(
+    path: Path,
+    key: str | None,
+) -> np.ndarray:
+    """
+    Load the voxel size from a h5 file.
+
+    Args:
+        path (Path): path to the h5 file
+        key (str | None): key of the dataset in the h5 file.
+
+    Returns:
+        np.ndarray: Voxel size (ZYX) represented as a numpy array
+
+    Raises:
+        ValueError: If key is not present in .h5 dataset.
+    """
+    with h5py.File(path, "r") as f:
+        data = f[key]
+        
+        if not isinstance(data, h5py.Dataset):
+            raise ValueError(f"'{key}' is not a h5py.Dataset.")
+    
+        voxel_size = data.attrs.get("element_size_um", None)
+
+        if voxel_size is None:
+            logger.warning(f"Voxel size not found in {path}.")
+
+    return voxel_size
+
+
+def save_h5(path: Path, 
+            stack: np.ndarray, 
+            key: str | None, 
+            voxel_size: np.ndarray | None, 
+            mode: str = "a"
+    ) -> None:
     """
     Create a dataset inside a h5 file from a numpy array.
 
@@ -49,6 +85,7 @@ def save_h5(path: Path, stack: np.ndarray, key: str | None, mode: str = "a") -> 
         path (Path): path to the h5 file
         stack (np.ndarray): numpy array to save as dataset in the h5 file.
         key (str): key of the dataset in the h5 file.
+        voxel_size (np.ndarray | None): voxel size of the dataset.
         mode (str): mode to open the h5 file ['w', 'a'].
 
     """
@@ -63,6 +100,9 @@ def save_h5(path: Path, stack: np.ndarray, key: str | None, mode: str = "a") -> 
         if key in f:
             del f[key]
         f.create_dataset(key, data=stack, compression="gzip")
+        # save voxel_size
+        if voxel_size is not None:
+            f[key].attrs["element_size_um"] = voxel_size
 
 
 def move_h5(file: Path, dest_path: Path) -> None:

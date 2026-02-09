@@ -16,7 +16,7 @@ from segmentation.core.cleaning import (
     make_binary,
     remove_labels,
 )
-from segmentation.core.io import get_h5_files, load_h5, save_h5
+from segmentation.core.io import get_h5_files, load_h5, save_h5, read_h5_voxel_size
 from segmentation.core.logger import setup_logging
 from segmentation.core.views import cleaning_comparison_plot
 
@@ -105,7 +105,8 @@ def main():
             logger.info(f"Processing {h5_file.name}...")
             segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, key)
             cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save=True)
-            save_h5(h5_file, cleaned_segmentation, key='cleaned')
+            voxel_size = read_h5_voxel_size(path=h5_file, key=key)
+            save_h5(h5_file, cleaned_segmentation, voxel_size=voxel_size, key='cleaned')
             logger.info(f"✓ {h5_file.name} processed successfully")
         except (FileNotFoundError, KeyError) as e:
             logger.error(f"✗ {h5_file.name}: {e}")
