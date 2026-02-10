@@ -1,4 +1,7 @@
 site_name: CallusSegmentation
+site_url: https://rfroeling.github.io/CallusSegmentation/
+
+repo_url: https://github.com/RFroeling/CallusSegmentation
 
 nav:
   - Home: index.md
