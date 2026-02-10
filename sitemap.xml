@@ -1,3 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://rfroeling.github.io/CallusSegmentation/</loc>
+         <lastmod>2026-02-10</lastmod>
+    </url>
+    <url>
+         <loc>https://rfroeling.github.io/CallusSegmentation/API/</loc>
+         <lastmod>2026-02-10</lastmod>
+    </url>
 </urlset>
