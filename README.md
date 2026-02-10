@@ -1,3 +1,7 @@
+> **GitHub migration**
+> Due to complications with the self-hosted nature of git.wur.nl, the remote for this repo was migrated to
+> https://github.com/RFroeling/CallusSegmentation.git
+
 # CallusSegmentation
 
 A set of [ImageJ](https://imagej.nih.gov/ij/) macros for automated extraction, cleaning, and segmentation of microscopy images from Leica LIF files. The workflow converts LIF files to TIFF stacks, applies cleaning and masking, and generates quality control montages.
