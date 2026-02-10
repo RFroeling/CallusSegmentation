@@ -18,15 +18,7 @@ dependencies = [
     "scipy>=1.17.0",
     "torch>=2.10.0",
     "torchvision>=0.25.0",
-    "mkdocs>=1.6.1",
-    "mkdocstrings[python]>=1.0.2",
     "vtk>=9.5.2",
-]
-
-[dependency-groups]
-dev = [
-    "mkdocs>=1.6.1",
-    "mkdocstrings[python]>=1.0.2",
 ]
 
 [tool.uv.sources]
@@ -51,3 +43,10 @@ explicit = true
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "UP", "A", "B", "SIM", "I"]
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings[python]>=1.0.3",
+]

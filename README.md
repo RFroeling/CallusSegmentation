@@ -1,6 +1,6 @@
 # CallusSegmentation
 
-![alt text](img/logo.png)
+![alt text](docs/img/logo.png)
 
 A Python toolkit for automated image segmentation of plant callus tissue from Leica LIF microscopy files. It is meant as a tool to automate processes around the [PlantSeg](https://github.com/kreshuklab/plant-seg) segmentation workflow, and specifically designed for the segmentation of callus tissue. 
 
@@ -15,13 +15,7 @@ This package provides tools for converting multi-scene LIF files to OME-TIFF for
 
 ## Installation
 
-This project uses [uv](https://github.com/astral-sh/uv) for fast dependency management. If you don't have uv installed, install it first:
-
-```bash
-pip install uv
-```
-
-Then clone the repository and install the package:
+This project uses [uv](https://github.com/astral-sh/uv) for fast dependency management. If you don't have uv installed, install it first, then clone the repository and install the package:
 
 ```bash
 git clone git@github.com:RFroeling/CallusSegmentation.git
