@@ -145,12 +145,25 @@ def print_h5_metrics(file_path: Path) -> None:
     with h5py.File(file_path, 'r') as f:
         # Print all keys and their properties
         for key in f.keys():
-            dataset = np.array(f[key])
+            dataset = np.array(f[key])            
             shape = dataset.shape
             dtype = dataset.dtype
 
+            if "element_size_um" in f[key].attrs:
+                voxel_size = np.asarray(f[key].attrs["element_size_um"])
+                has_voxel = True
+            else:
+                voxel_size = np.empty(3)
+                has_voxel = False
+
             print(f"\nKey: {key}")
             print(f"  Shape: {shape}")
+
+            if has_voxel:
+                print(
+                    f"  Voxel size (zyx): "
+                    f"{voxel_size[0]:.3f} x {voxel_size[1]:.3f} x {voxel_size[2]:.3f} um"
+                )
             print(f"  Data type: {dtype}")
             print(f"  Size: {dataset.nbytes / (1024 ** 2):.2f} MB")
 
