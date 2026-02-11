@@ -1,3 +1,13 @@
+"""Ad-hoc script to move accepted files into a curated directory.
+
+This small helper reads a review CSV produced by the reviewer GUI and moves
+all files with decision "accepted" into a `curated_labels` directory.
+
+The script is environment-specific in this repository and uses absolute
+paths; it is kept as a convenience script and is not intended as a
+reusable library function.
+"""
+
 from pathlib import Path
 
 import pandas as pd

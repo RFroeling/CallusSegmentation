@@ -30,6 +30,12 @@ out_dir = Path(output_env)
 
 
 def convert(file, out_dir):
+    """Convert a single .lif file into OME-TIFF scenes.
+
+    Args:
+        file (Path): Path to the .lif file to convert.
+        out_dir (Path): Directory where converted scenes will be saved.
+    """
     logger.info(f'Converting the contents of {file.name}:')
     bioimg = read_lif(file)
     save_scenes_as_ome_tiff(bioimg, out_dir)
@@ -37,6 +43,11 @@ def convert(file, out_dir):
 
 
 def main():
+    """Entry point for the conversion task.
+
+    If the configured `LIF_PATH` points to a file, convert that file. If it
+    points to a directory, convert all ``*.lif`` files inside it.
+    """
     if input.is_file():
         convert(input, out_dir)
 

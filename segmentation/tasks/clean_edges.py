@@ -1,3 +1,10 @@
+"""Task module to clean segmentation results by removing boundary-touching labels.
+
+This module contains the command-line task used to process a directory of
+.h5 segmentation files, locate the main tissue and remove unwanted labels
+including those that touch the volume boundary.
+"""
+
 import logging
 import os
 from pathlib import Path
@@ -16,7 +23,7 @@ from segmentation.core.cleaning import (
     make_binary,
     remove_labels,
 )
-from segmentation.core.io import get_h5_files, load_h5, save_h5, read_h5_voxel_size
+from segmentation.core.io import get_h5_files, load_h5, read_h5_voxel_size, save_h5
 from segmentation.core.logger import setup_logging
 from segmentation.core.views import cleaning_comparison_plot
 
@@ -96,6 +103,13 @@ def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.nd
 
 
 def main():
+    """Process all configured .h5 files and save cleaned segmentations.
+
+    Iterates over the files returned by :func:`segmentation.core.io.get_h5_files`,
+    runs :func:`cleanup_segmentation` on each, writes comparison plots and
+    stores the cleaned segmentation under the key ``'cleaned'``. Errors are
+    logged and collected in ``failed_files`` for reporting.
+    """
     failed_files = []
 
     h5_files = get_h5_files(data_path)

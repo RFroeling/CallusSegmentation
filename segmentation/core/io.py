@@ -1,8 +1,8 @@
 """Module that provides functionality to deal with .h5 datasets."""
 import logging
+from collections.abc import Sequence
 from os.path import getsize
 from pathlib import Path
-from typing import Sequence
 
 import bioio_lif
 import h5py
@@ -61,10 +61,10 @@ def read_h5_voxel_size(
     """
     with h5py.File(path, "r") as f:
         data = f[key]
-        
+
         if not isinstance(data, h5py.Dataset):
             raise ValueError(f"'{key}' is not a h5py.Dataset.")
-    
+
         voxel_size = data.attrs.get("element_size_um", None)
 
         if voxel_size is None:
@@ -73,10 +73,10 @@ def read_h5_voxel_size(
     return voxel_size
 
 
-def save_h5(path: Path, 
-            stack: np.ndarray, 
-            key: str | None, 
-            voxel_size: np.ndarray | None, 
+def save_h5(path: Path,
+            stack: np.ndarray,
+            key: str | None,
+            voxel_size: Sequence[float]| None,
             mode: str = "a"
     ) -> None:
     """
@@ -146,7 +146,7 @@ def print_h5_metrics(file_path: Path) -> None:
     with h5py.File(file_path, 'r') as f:
         # Print all keys and their properties
         for key in f.keys():
-            dataset = np.array(f[key])            
+            dataset = np.array(f[key])
             shape = dataset.shape
             dtype = dataset.dtype
 

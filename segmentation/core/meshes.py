@@ -1,14 +1,17 @@
-from typing import Sequence
+"""VTK helper functions for converting labeled numpy volumes to surface meshes.
+"""
+
+from collections.abc import Sequence
 from pathlib import Path
+
 import numpy as np
 from scipy import ndimage
-
-from vtkmodules.vtkCommonDataModel import vtkImageData
-from vtkmodules.vtkCommonCore import VTK_INT
 from vtkmodules.util import numpy_support
 from vtkmodules.util.data_model import PolyData
-from vtkmodules.vtkFiltersGeneral import vtkDiscreteMarchingCubes
+from vtkmodules.vtkCommonCore import VTK_INT
+from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtkmodules.vtkFiltersCore import vtkConnectivityFilter
+from vtkmodules.vtkFiltersGeneral import vtkDiscreteMarchingCubes
 from vtkmodules.vtkIOGeometry import vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYWriter
 
@@ -43,11 +46,16 @@ def numpy_to_vtk_image(data: np.ndarray, voxel_size: Sequence[float]) -> vtkImag
     return img
 
 
-# ----------------------------
-# Extract surface for a given label
-# ----------------------------
-
 def extract_label_surface(image, label) -> PolyData:
+    """Extract the surface mesh for a single label using discrete marching cubes.
+
+    Args:
+        image (vtkImageData): Input volume where scalar values encode labels.
+        label (int): Label value for which the surface should be extracted.
+
+    Returns:
+        PolyData: VTK polydata containing the extracted surface for ``label``.
+    """
     dmc = vtkDiscreteMarchingCubes()
     dmc.SetInputData(image)
     dmc.SetValue(0, int(label))
@@ -56,12 +64,18 @@ def extract_label_surface(image, label) -> PolyData:
     return dmc.GetOutput()
 
 
-# ----------------------------
-# Keep only largest connected component
-# ----------------------------
-
 def keep_largest_component(polydata: PolyData) -> PolyData:
+    """Return a new PolyData containing only the largest connected component.
 
+    This uses a connectivity filter to identify connected regions and keeps
+    the single largest region by surface connectivity.
+
+    Args:
+        polydata (PolyData): Input mesh to be filtered.
+
+    Returns:
+        PolyData: Mesh containing only the largest connected component.
+    """
     connectivity = vtkConnectivityFilter()
     connectivity.SetInputData(polydata)
     connectivity.SetExtractionModeToLargestRegion()
@@ -70,11 +84,18 @@ def keep_largest_component(polydata: PolyData) -> PolyData:
     return connectivity.GetOutput()
 
 
-# ----------------------------
-# Save mesh
-# ----------------------------
-
 def save_mesh(polydata, filename: Path):
+    """Write a mesh to disk in STL or PLY format.
+
+    The writer is selected based on the file extension of ``filename``.
+
+    Args:
+        polydata (PolyData): Mesh to write.
+        filename (Path): Destination path. Supported extensions: ``.stl``, ``.ply``.
+
+    Raises:
+        ValueError: If the provided filename has an unsupported extension.
+    """
     if filename.suffix.lower() == ".stl":
         writer = vtkSTLWriter()
     elif filename.suffix.lower() == ".ply":
@@ -88,11 +109,32 @@ def save_mesh(polydata, filename: Path):
 
 
 def compute_label_bboxes(labels) -> list[tuple]:
+    """Compute bounding boxes for all labeled objects in a volume.
+
+    The returned list is indexable by ``label-1``.
+
+    Args:
+        labels (np.ndarray): Integer labeled volume where 0 is background.
+
+    Returns:
+        list[tuple]: List of slice tuples describing object bounding boxes.
+    """
     return ndimage.find_objects(labels)
 
 
 def compute_label_sizes(labels: np.ndarray):
+    """Compute the voxel count for each label in the labeled volume.
 
+    The return value is a 1D array such that ``sizes[label]`` gives the
+    number of voxels belonging to ``label``. Note that ``sizes[0]`` is the
+    background count.
+
+    Args:
+        labels (np.ndarray): Integer labeled volume.
+
+    Returns:
+        np.ndarray: 1D array of counts per label.
+    """
     flat = labels.ravel()
     sizes = np.bincount(flat)
 
@@ -101,6 +143,13 @@ def compute_label_sizes(labels: np.ndarray):
 
 def is_2d_label(bboxes: list[tuple], lbl: int) -> bool:
     """Returns True if the given label only spans one voxel in at least one dimension (Z, Y, or X).
+
+    Args:
+        bboxes (list[tuple]): Bounding boxes for each label.
+        lbl (int): Label value to check.
+
+    Returns:
+        bool: True if ``lbl`` is 2D and should be excluded.
     """
     bbox = bboxes[lbl - 1]  # labels assumed 1..N
 
@@ -115,6 +164,19 @@ def is_2d_label(bboxes: list[tuple], lbl: int) -> bool:
 
 
 def is_too_small_label(lbl: int, sizes: np.ndarray, min_voxels: int) -> bool:
+    """Return True when a label is smaller than a minimum voxel threshold.
+
+    If the label index is out-of-range for the provided ``sizes`` array the
+    function conservatively returns True.
+
+    Args:
+        lbl (int): Label value to check.
+        sizes (np.ndarray): 1D array where ``sizes[label]`` gives voxel count.
+        min_voxels (int): Minimum allowed voxel count.
+
+    Returns:
+        bool: True if ``lbl`` should be considered too small and excluded.
+    """
     if lbl >= len(sizes):
         return True
     return sizes[lbl] < min_voxels

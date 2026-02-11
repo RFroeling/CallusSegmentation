@@ -1,9 +1,25 @@
+"""Command-line entry point and dispatch for the segmentation utilities.
+
+This module provides a small CLI used to call the different tools in the
+`segmentation` package (reviewer GUI, cleaning routines, file conversion,
+inspection helpers and PlantSeg workflows).
+
+The module exposes a `main()` function intended to be used as a console
+entry point.
+
+Google-style docstrings are used for functions in this module.
+"""
+
 import argparse
 from pathlib import Path
 
 
 def create_parser():
-    """Create and return the argument parser for the CLI."""
+    """Create and return the argument parser for the CLI.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     arg_parser = argparse.ArgumentParser()
     mode = arg_parser.add_mutually_exclusive_group(required=True)
     mode.add_argument(
@@ -41,7 +57,10 @@ def create_parser():
 
 
 def launch_reviewer():
-    """Start the reviewer to review files."""
+    """Start the reviewer GUI for manual image review.
+
+    This function imports and launches :class:`segmentation.core.views.ImageReviewer`.
+    """
     from segmentation.core.views import ImageReviewer
 
     viewer = ImageReviewer()
@@ -49,27 +68,40 @@ def launch_reviewer():
 
 
 def clean_edges():
-    """Cleans the boundary labels from segmented images"""
+    """Run the boundary-cleaning task.
+
+    Imports and runs :func:`segmentation.tasks.clean_edges.main`.
+    """
     from segmentation.tasks.clean_edges import main
 
     main()
 
 
 def convert_images():
-    """Convert .lif file(s) to .ome.tiff"""
+    """Run the image conversion task to produce OME-TIFF files.
+
+    Imports and runs :func:`segmentation.tasks.convert_lif.main`.
+    """
     from segmentation.tasks.convert_lif import main
 
     main()
 
 
 def inspect_file():
-    """Inspect the content of user specified file(s)"""
+    """Run the interactive HDF5 inspection utility.
+
+    Imports and runs :func:`segmentation.tasks.inspect_h5.main`.
+    """
     from segmentation.tasks.inspect_h5 import main
 
     main()
 
 def run_plantseg_workflow(yaml_path: Path):
-    """Run a PlantSeg workflow based on config YAML"""
+    """Execute a PlantSeg headless workflow from a YAML config file.
+
+    Args:
+        yaml_path (Path): Path to the PlantSeg YAML configuration file.
+    """
     from segmentation.tasks.run_plantseg_workflow import main
 
     main(yaml_path)

@@ -1,20 +1,28 @@
+"""Helpers to extract surface meshes from labeled volume datasets.
+
+This module contains a utility to convert labeled 3D images into surface
+meshes using VTK. It supports exporting the whole tissue mesh as well as
+individual cell meshes and performs simple filters (2D artefacts, small
+objects) before writing files.
+"""
+
+import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
-import logging
 
-from segmentation.core.logger import setup_logging
 from segmentation.core.io import load_h5, read_h5_voxel_size
+from segmentation.core.logger import setup_logging
 from segmentation.core.meshes import (
-    numpy_to_vtk_image,
-    extract_label_surface,
-    keep_largest_component,
-    save_mesh,
     compute_label_bboxes,
     compute_label_sizes,
+    extract_label_surface,
     is_2d_label,
     is_too_small_label,
+    keep_largest_component,
+    numpy_to_vtk_image,
+    save_mesh,
 )
 
 # Configure logging
@@ -30,6 +38,20 @@ def labels_to_meshes(
     extract_cells: bool=True,
     extract_tissue: bool=True,
 ) -> None:
+    """Extract and save surface meshes from a labeled volume.
+
+    The function writes a tissue mesh file named ``tissue.ply`` (when
+    ``extract_tissue`` is True) and a per-cell mesh file ``cell_XXXXX.ply``
+    for each label that meets the heuristics.
+
+    Args:
+        labels (np.ndarray): 3D labeled image (ZYX).
+        voxel_size (Sequence[float]): Voxel size in micrometers (zyx).
+        output_dir (Path): Directory where meshes are written.
+        min_size (int): Minimum voxel count for a label to be exported.
+        extract_cells (bool): Whether to export individual cell meshes.
+        extract_tissue (bool): Whether to export the whole tissue mesh.
+    """
     vtk_img = numpy_to_vtk_image(labels, voxel_size)
 
     bboxes = compute_label_bboxes(labels)
@@ -74,6 +96,11 @@ def labels_to_meshes(
 
 
 def main():
+    """Small test runner that converts a hard-coded test .h5 file to meshes.
+
+    The function is primarily intended as a convenience for local testing and
+    demonstration; paths and parameters are hard-coded.
+    """
     h5_path = Path('.data/test_h5/251201_251215_Col-0_R01_W01_002.h5')
     h5_key = 'cleaned'
     output_dir = Path('.data/test_output')
@@ -91,6 +118,7 @@ def main():
         extract_cells=True,
         extract_tissue=True,
     )
+
 
 if __name__ == "__main__":
     main()
