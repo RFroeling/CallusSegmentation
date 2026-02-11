@@ -13,6 +13,7 @@ from vtkmodules.vtkFiltersCore import vtkConnectivityFilter
 from vtkmodules.vtkIOGeometry import vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYWriter
 
+MIN_SIZE=5000
 
 def load_h5(path: Path, key: str | None) -> np.ndarray:
     """Load a dataset as a numpy array using context manager by given key from a .h5 file.
@@ -90,6 +91,20 @@ def is_2d_label(bboxes: list[tuple], lbl: int) -> bool:
     return (dz == 1) or (dy == 1) or (dx == 1)
 
 
+def is_too_small_label(lbl: int, sizes: np.ndarray, min_voxels: int) -> bool:
+    if lbl >= len(sizes):
+        return True
+    return sizes[lbl] < min_voxels
+
+
+def compute_label_sizes(labels: np.ndarray):
+
+    flat = labels.ravel()
+    sizes = np.bincount(flat)
+
+    return sizes  # sizes[lbl] = voxel count
+
+
 def numpy_to_vtk_image(data: np.ndarray, voxel_size: Sequence[float]) -> vtkImageData:
     """Builds an instance of vtkImageData from a numpy array with given voxel size.
 
@@ -108,7 +123,7 @@ def numpy_to_vtk_image(data: np.ndarray, voxel_size: Sequence[float]) -> vtkImag
     img.SetSpacing(voxel_size[::-1])  # vtk uses (x,y,z)
     img.SetOrigin(0, 0, 0)
 
-    flat = data.ravel(order="C") # Flatten 3D array to 1D array > required for numpy_to_vtk()
+    flat = data.ravel() # Flatten 3D array to 1D array > required for numpy_to_vtk()
     vtk_array = numpy_support.numpy_to_vtk(
         num_array=flat,
         deep=True,
@@ -129,9 +144,6 @@ def extract_label_surface(image, label) -> PolyData:
     dmc.SetInputData(image)
     dmc.SetValue(0, int(label))
     dmc.Update()
-
-    output = dmc.GetOutput()
-    print(type(output))
 
     return dmc.GetOutput()
 
@@ -179,6 +191,7 @@ def labels_to_meshes(
     labels: np.ndarray,
     voxel_size: Sequence[float],
     output_dir: Path,
+    min_size: int,
     extract_cells: bool=True,
     extract_tissue: bool=True,
 ):
@@ -189,13 +202,10 @@ def labels_to_meshes(
     vtk_img = numpy_to_vtk_image(labels, voxel_size)
 
     bboxes = compute_label_bboxes(labels)
+    sizes = compute_label_sizes(labels)
 
     unique_labels = np.unique(labels)
     unique_labels = unique_labels[unique_labels != 0]
-
-    # TODO:
-    # - Omit 2D labels
-    # - Size filter
 
     # =====================
     # WHOLE TISSUE MESH
@@ -208,11 +218,11 @@ def labels_to_meshes(
         binary = (labels > 0).astype(np.uint8)
         vtk_binary = numpy_to_vtk_image(binary, voxel_size)
 
-        tissue_surf = extract_label_surface(vtk_binary, 1)
+        tissue_surface = extract_label_surface(vtk_binary, 1)
 
-        tissue_surf = keep_largest_component(tissue_surf)
+        tissue_surface = keep_largest_component(tissue_surface)
 
-        save_mesh(tissue_surf, output_dir / "tissue.ply")
+        save_mesh(tissue_surface, output_dir / "tissue.ply")
 
     # =====================
     # INDIVIDUAL CELLS
@@ -226,14 +236,18 @@ def labels_to_meshes(
                 print(f"Skipping 2D artefact label {lbl}")
                 continue
 
-            print(f"Extracting cell {lbl}")
-
-            surf = extract_label_surface(vtk_img, lbl)
-
-            if surf.GetNumberOfPoints() == 0:
+            if is_too_small_label(lbl, sizes, min_size):
+                print(f"Skipping tiny label {lbl}")
                 continue
 
-            save_mesh(surf, output_dir / f"cell_{lbl:05d}.ply")
+            print(f"Extracting cell {lbl}")
+
+            surface = extract_label_surface(vtk_img, lbl)
+
+            if surface.GetNumberOfPoints() == 0:
+                continue
+
+            save_mesh(surface, output_dir / f"cell_{lbl:05d}.ply")
 
 
 # ----------------------------
@@ -253,6 +267,7 @@ if __name__ == "__main__":
         labels,
         voxel_size,
         output_dir=output_dir,
+        min_size=MIN_SIZE,
         extract_cells=True,
         extract_tissue=True,
     )
