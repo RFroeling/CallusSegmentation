@@ -2,6 +2,7 @@
 import logging
 from os.path import getsize
 from pathlib import Path
+from typing import Sequence
 
 import bioio_lif
 import h5py
@@ -44,7 +45,7 @@ def load_h5(path: Path, key: str | None) -> np.ndarray:
 def read_h5_voxel_size(
     path: Path,
     key: str | None,
-) -> np.ndarray:
+) -> Sequence[float]:
     """
     Load the voxel size from a h5 file.
 
