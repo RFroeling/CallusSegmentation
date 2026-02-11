@@ -52,6 +52,12 @@ def create_parser():
         type=Path,
         help="Run PlantSeg workflow from YAML config file",
     )
+    mode.add_argument(
+        "--meshing",
+        "-m",
+        action='store_true',
+        help="Produce meshes from .h5 files in provided Path",
+    )
     # Add arguments here if neccesary
     return arg_parser.parse_args()
 
@@ -107,6 +113,18 @@ def run_plantseg_workflow(yaml_path: Path):
     main(yaml_path)
 
 
+def create_meshes():
+    """Runs a meshing task on .h5 files in input_path.
+
+    Args:
+        input_path (Path): Directory containing .h5 files.
+    """
+    from segmentation.tasks.create_meshes import main
+
+    main()
+
+
+
 def main():
     """Main function to parse arguments and call corresponding functionality."""
     args = create_parser()
@@ -121,6 +139,8 @@ def main():
         inspect_file()
     elif args.plantseg:
         run_plantseg_workflow(args.plantseg)
+    elif args.meshing:
+        create_meshes()
     else:
         raise ValueError(
             "Wrong arguments. Run `segmentation -h` to see the available options."
