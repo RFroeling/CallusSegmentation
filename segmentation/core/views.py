@@ -59,7 +59,12 @@ def create_random_colormap(num_labels: int) -> mcolors.ListedColormap:
     return mcolors.ListedColormap(colors)
 
 
-def cleaning_comparison_plot(dataset: np.ndarray, cleaned_dataset: np.ndarray, path: Path, save: bool=False) -> None:
+def cleaning_comparison_plot(
+        dataset: np.ndarray, 
+        cleaned_dataset: np.ndarray, 
+        path: Path, 
+        save: bool=False
+        ) -> None:
     """Create comparison plots of original and cleaned datasets.
     
     Displays XY and YZ cross-sections of both the original and cleaned datasets
@@ -274,7 +279,8 @@ class ImageReviewer(tk.Tk):
                 # No new files
                 resp = messagebox.askyesno(
                     "No new files",
-                    "All files in the folder are already reviewed.\nDo you want to re-review all files?"
+                    "All files in the folder are already reviewed.  \
+                    \nDo you want to re-review all files?"
                 )
                 if resp:
                     self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
@@ -361,7 +367,8 @@ class ImageReviewer(tk.Tk):
             fname = self.files[self.index].name
             # Update dataframe: if exists, replace; else append
             if not self.df.empty and fname in self.df["FileName"].values:
-                self.df.loc[self.df["FileName"] == fname, ["Decision", "Timestamp"]] = [decision, timestamp]
+                self.df.loc[self.df["FileName"] == fname, 
+                            ["Decision", "Timestamp"]] = [decision, timestamp]
             else:
                 new_row = {"FileName": fname, "Decision": decision, "Timestamp": timestamp}
                 self.df = pd.concat([self.df, pd.DataFrame([new_row])], ignore_index=True)

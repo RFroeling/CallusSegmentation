@@ -35,7 +35,10 @@ setup_logging()
 load_dotenv()
 data_path_env = os.getenv('DATA_PATH')
 if not data_path_env or data_path_env == "path/to/your/data":
-    logger.error("Environment variable DATA_PATH is not set. Please configure .env with DATA_PATH pointing to your data directory.")
+    logger.error(
+        "Environment variable DATA_PATH is not set. " \
+        "Please configure .env with DATA_PATH pointing to your data directory."
+        )
     raise SystemExit("Missing required environment variable: DATA_PATH")
 
 data_path = Path(data_path_env)
@@ -45,7 +48,10 @@ if not data_path.exists():
 
 key = os.getenv('KEY')
 if not key or key == "your_segmentation_key":
-    logger.error("Environment variable KEY is not set. Please configure .env with KEY specifying the dataset key to use.")
+    logger.error(
+        "Environment variable KEY is not set. " \
+        "Please configure .env with KEY specifying the dataset key to use."
+        )
     raise SystemExit("Missing required environment variable: KEY")
 
 
@@ -87,7 +93,8 @@ def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.nd
         key (str): The key specifying which dataset should be used for analysis.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: A tuple containing the raw dataset for the given key, and the cleaned version.
+        tuple[np.ndarray, np.ndarray]: A tuple containing the raw dataset for the given key, 
+            and the cleaned version.
     """
     dataset = load_h5(path, key)
     binary = make_binary(dataset)

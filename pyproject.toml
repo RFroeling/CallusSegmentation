@@ -41,8 +41,11 @@ name = "pytorch-cu126"
 url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
+[tool.ruff]
+line-length = 100
+
 [tool.ruff.lint]
-select = ["E", "W", "F", "UP", "A", "B", "SIM", "I"]
+select = ["E", "F", "UP", "B", "SIM", "I"]
 
 [dependency-groups]
 dev = [

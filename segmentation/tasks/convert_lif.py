@@ -17,12 +17,18 @@ setup_logging()
 load_dotenv()
 input_env = getenv('LIF_PATH')
 if not input_env:
-    logger.error("Environment variable LIF_PATH is not set. Please configure .env with LIF_PATH pointing to your data directory.")
+    logger.error(
+        "Environment variable LIF_PATH is not set. " \
+        "Please configure .env with LIF_PATH pointing to your data directory."
+        )
     raise SystemExit("Missing required environment variable: LIF_PATH")
 
 output_env = getenv('OME_TIFF_PATH')
 if not output_env:
-    logger.error("Environment variable OME_TIFF_PATH is not set. Please configure .env with OME_TIFF_PATH pointing to your output directory.")
+    logger.error(
+        "Environment variable OME_TIFF_PATH is not set. " \
+        "Please configure .env with OME_TIFF_PATH pointing to your output directory."
+    )
     raise SystemExit("Missing required environment variable: OME_TIFF_PATH")
 
 input = Path(input_env)

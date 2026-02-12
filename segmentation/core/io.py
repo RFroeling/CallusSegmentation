@@ -196,7 +196,8 @@ def read_lif(filename: Path) -> BioImage:
 
 
 def safe_scenename(scene:str) -> str:
-    """.lif files taken using navigator functionality might containt slashes in their scenenames, which makes them annoying to save.
+    """.lif files taken using navigator functionality might containt slashes in their scenenames, 
+    which makes them annoying to save.
     
     This function returns a safe scenename that can be used for saving.
     
@@ -239,4 +240,5 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
             bioimg.save(path, select_scenes=[scene])
             logger.info(f"Converted image {i +1}/{len(bioimg.scenes)}: {safe_scene}.ome.tiff")
         except Exception as e:
-            logger.error(f"Unexpected error: {type(e).__name__}: {e} \n Could not save scene {safe_scene}.")
+            logger.error(f"Unexpected error: {type(e).__name__}: {e} \
+                         \n Could not save scene {safe_scene}.")
