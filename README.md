@@ -2,6 +2,8 @@
 
 ![alt text](docs/img/logo.png)
 
+ [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Python toolkit for automated image segmentation of plant callus tissue from Leica LIF microscopy files. It is meant as a tool to automate processes around the [PlantSeg](https://github.com/kreshuklab/plant-seg) segmentation workflow, and specifically designed for the segmentation of callus tissue. 
 
 This package provides tools for converting multi-scene LIF files to OME-TIFF format, cleaning segmented images, running PlantSeg workflows, and interactively reviewing results. Check the full [documentation](https://rfroeling.github.io/CallusSegmentation/).
@@ -124,4 +126,4 @@ CallusSegmentation/
 
 ## License
 
-This project is licensed under the [Creative Commons Attribution 4.0 International License](LICENSE).
+This project is licensed under the [MIT](LICENSE).
