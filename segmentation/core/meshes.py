@@ -224,9 +224,8 @@ def compute_bbox(polydata) -> tuple:
 
 def is_mesh_watertight(polydata):
     """
-    Returns True if mesh is watertight (no boundary edges).
+    Returns True if mesh is watertight (no edges used by only 1 face).
     """
-
     feat_edges = vtkFeatureEdges()
     feat_edges.SetInputData(polydata)
     feat_edges.BoundaryEdgesOn()      # edges used by only 1 face
@@ -239,8 +238,65 @@ def is_mesh_watertight(polydata):
 
     return n_boundary_edges == 0
 
+# TODO: Requires implementation
 
-def extract_features(polydata):
+# def compute_contacts_and_neighbors(
+#         labels: np.ndarray, 
+#         voxel_size: Sequence[float]
+#         ) -> tuple[dict]:
+
+#     sz, sy, sx = voxel_size
+
+#     face_defs = [
+#         ((1,0,0), sy*sx),
+#         ((0,1,0), sz*sx),
+#         ((0,0,1), sz*sy),
+#     ]
+
+#     contact_pairs = {}
+#     background_contact = {}
+#     neighbors = {}
+
+#     unique = np.unique(labels)
+#     unique = unique[unique != 0]
+
+#     for lbl in unique:
+#         neighbors[lbl] = set()
+#         background_contact[lbl] = 0.0
+
+#     for shift, face_area in face_defs:
+
+#         shifted = np.roll(labels, shift=shift, axis=(0,1,2))
+#         diff = labels != shifted
+
+#         a = labels[diff]
+#         b = shifted[diff]
+
+#         for lbl1, lbl2 in zip(a, b):
+
+#             if lbl1 == 0 and lbl2 == 0:
+#                 continue
+
+#             if lbl1 == 0:
+#                 background_contact[lbl2] += face_area
+#                 continue
+
+#             if lbl2 == 0:
+#                 background_contact[lbl1] += face_area
+#                 continue
+
+#             if lbl1 != lbl2:
+#                 key = tuple(sorted((lbl1, lbl2)))
+#                 contact_pairs[key] = contact_pairs.get(key, 0.0) + face_area
+#                 neighbors[lbl1].add(lbl2)
+#                 neighbors[lbl2].add(lbl1)
+
+#     neighbor_count = {k: len(v) for k, v in neighbors.items()}
+
+#     return contact_pairs, background_contact, neighbor_count
+
+
+def extract_features_from_mesh(polydata):
 
     volume, area = compute_volume_area(polydata)
     bounds = compute_bbox(polydata)

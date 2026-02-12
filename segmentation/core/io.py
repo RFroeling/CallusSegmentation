@@ -3,10 +3,12 @@ import logging
 from collections.abc import Sequence
 from os.path import getsize
 from pathlib import Path
+from datetime import datetime
 
 import bioio_lif
 import h5py
 import numpy as np
+import pandas as pd
 from bioio import BioImage
 
 # Define logger
@@ -242,3 +244,39 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
         except Exception as e:
             logger.error(f"Unexpected error: {type(e).__name__}: {e} \
                          \n Could not save scene {safe_scene}.")
+
+
+def calculate_age(date1: str, date2: str) -> int:
+    """Calculate the age in days between two dates given as `yymmdd` strings.
+
+    Args:
+        date1 (str): Start date in `yymmdd` format (e.g. '251027').
+        date2 (str): Analysis date in `yymmdd` format.
+
+    Returns:
+        int: Number of days between `date1` and `date2`.
+
+    Raises:
+        ValueError: If the input strings are not in `yymmdd` format.
+    """
+    try:
+        fdate1 = datetime.strptime(date1, "%y%m%d").date()
+        fdate2 = datetime.strptime(date2, "%y%m%d").date()
+    except Exception as exc:
+        raise ValueError(f"Dates must be in 'yymmdd' format: {exc}") from exc
+
+    age = abs((fdate1 - fdate2).days)
+
+    return age
+
+
+def calculate_age_from_id(id: str) -> int:
+    parts = id.split('_')
+    date1 = parts[0]
+    date2 = parts[1]
+
+    return calculate_age(date1, date2)
+
+
+def save_df_to_csv(df: pd.DataFrame, output_path: Path) -> None:
+    df.to_csv(output_path)

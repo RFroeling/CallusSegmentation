@@ -13,11 +13,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from segmentation.core.io import load_h5, read_h5_voxel_size
+from segmentation.core.io import load_h5, read_h5_voxel_size, calculate_age_from_id
 from segmentation.core.meshes import (
     compute_label_bboxes,
     compute_label_sizes,
-    extract_features,
+    extract_features_from_mesh,
     extract_label_surface,
     is_2d_label,
     is_too_small_label,
@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 def labels_to_meshes(
     labels: np.ndarray,
     voxel_size: Sequence[float],
+    callus_id: str,
     output_dir: Path,
     min_size: int,
     extract_cells: bool=True,
@@ -62,6 +63,7 @@ def labels_to_meshes(
 
     bboxes = compute_label_bboxes(labels)
     sizes = compute_label_sizes(labels)
+    age = calculate_age_from_id(callus_id)
 
     unique_labels = np.unique(labels)
     unique_labels = unique_labels[unique_labels != 0]
@@ -80,8 +82,11 @@ def labels_to_meshes(
         tissue_surface = keep_largest_component(tissue_surface)
 
         if calculate_features:
-            tissue_features = extract_features(tissue_surface)
-            tissue_features.update({'Label': 'tissue'})
+            tissue_features = extract_features_from_mesh(tissue_surface)
+            tissue_features.update({'Label': 'tissue', 
+                                    'callus_id': callus_id, 
+                                    'age': age,
+                                    })
             feature_rows.append(tissue_features)
 
         save_mesh(tissue_surface, output_dir / "tissue.ply")
@@ -106,8 +111,11 @@ def labels_to_meshes(
                 continue
 
             if calculate_features:
-                cell_features = extract_features(surface)
-                cell_features.update({'Label': f'cell_{lbl:03d}'})
+                cell_features = extract_features_from_mesh(surface)
+                cell_features.update({'Label': f'cell_{lbl:03d}', 
+                                      'callus_id': callus_id, 
+                                      'age': age,
+                                      })
                 feature_rows.append(cell_features)
 
             save_mesh(surface, output_dir / f"cell_{lbl:03d}.ply")
@@ -127,6 +135,7 @@ def main():
     """
     h5_path = Path('.data/test_h5/251201_251215_Col-0_R01_W01_002.h5')
     h5_key = 'cleaned'
+    callus_id = h5_path.stem
     output_dir = Path('.data/test_output')
     output_dir.mkdir(exist_ok=True, parents=True)
     MIN_SIZE=5000
@@ -137,6 +146,7 @@ def main():
     features = labels_to_meshes(
         labels,
         voxel_size,
+        callus_id,
         output_dir=output_dir,
         min_size=MIN_SIZE,
         extract_cells=True,
