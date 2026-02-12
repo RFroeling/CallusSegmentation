@@ -11,12 +11,14 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from segmentation.core.io import load_h5, read_h5_voxel_size
 from segmentation.core.logger import setup_logging
 from segmentation.core.meshes import (
     compute_label_bboxes,
     compute_label_sizes,
+    extract_features,
     extract_label_surface,
     is_2d_label,
     is_too_small_label,
@@ -27,7 +29,7 @@ from segmentation.core.meshes import (
 
 # Configure logging
 logger = logging.getLogger(__name__)
-setup_logging()
+setup_logging(logging.DEBUG)
 
 
 def labels_to_meshes(
@@ -37,7 +39,8 @@ def labels_to_meshes(
     min_size: int,
     extract_cells: bool=True,
     extract_tissue: bool=True,
-) -> None:
+    calculate_features: bool=True,
+) -> pd.DataFrame | None:
     """Extract and save surface meshes from a labeled volume.
 
     The function writes a tissue mesh file named ``tissue.ply`` (when
@@ -51,6 +54,11 @@ def labels_to_meshes(
         min_size (int): Minimum voxel count for a label to be exported.
         extract_cells (bool): Whether to export individual cell meshes.
         extract_tissue (bool): Whether to export the whole tissue mesh.
+        extract_featues (bool): Whether to extract numerical features from meshes.
+
+    Returns:
+        pd.DataFrame: Dataframe containing calculated features from meshes if
+            extract_features was set to `True`.
     """
     vtk_img = numpy_to_vtk_image(labels, voxel_size)
 
@@ -59,6 +67,8 @@ def labels_to_meshes(
 
     unique_labels = np.unique(labels)
     unique_labels = unique_labels[unique_labels != 0]
+
+    feature_rows = []
 
     if extract_tissue: # Extract whole tissue meshes
 
@@ -70,6 +80,11 @@ def labels_to_meshes(
         tissue_surface = extract_label_surface(vtk_binary, 1)
 
         tissue_surface = keep_largest_component(tissue_surface)
+
+        if calculate_features:
+            tissue_features = extract_features(tissue_surface)
+            tissue_features.update({'Label': 'tissue'})
+            feature_rows.append(tissue_features)
 
         save_mesh(tissue_surface, output_dir / "tissue.ply")
 
@@ -92,7 +107,18 @@ def labels_to_meshes(
             if surface.GetNumberOfPoints() == 0: # Skip empty meshes
                 continue
 
-            save_mesh(surface, output_dir / f"cell_{lbl:05d}.ply")
+            if calculate_features:
+                cell_features = extract_features(surface)
+                cell_features.update({'Label': f'cell_{lbl:03d}'})
+                feature_rows.append(cell_features)
+
+            save_mesh(surface, output_dir / f"cell_{lbl:03d}.ply")
+    
+    if calculate_features:
+        features = pd.DataFrame(feature_rows)
+        logger.debug(f'\n{features.head()}')
+
+        return features
 
 
 def main():
@@ -110,15 +136,15 @@ def main():
     labels = load_h5(h5_path, h5_key)
     voxel_size = read_h5_voxel_size(h5_path, h5_key)
 
-    labels_to_meshes(
+    features = labels_to_meshes(
         labels,
         voxel_size,
         output_dir=output_dir,
         min_size=MIN_SIZE,
         extract_cells=True,
         extract_tissue=True,
+        calculate_features=False,
     )
-
 
 if __name__ == "__main__":
     main()
