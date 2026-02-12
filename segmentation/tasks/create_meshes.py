@@ -34,9 +34,50 @@ from segmentation.core.meshes import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+import numpy as np
+import logging
+
+
+def filter_unique_labels(data: np.ndarray, min_size: int) -> np.ndarray:
+    """Filters labels from a 3D label image.
+
+    Keeps only labels that:
+    - are 3D (not 2D artefacts)
+    - have a size >= min_size
+
+    Args:
+        data (np.ndarray): 3D label image.
+        labels (np.ndarray): Array of unique labels in the image.
+        min_size (int) : Minimum voxel size threshold.
+
+    Returns:
+        np.ndarray: Filtered labels.
+    """
+    bboxes = compute_label_bboxes(data)
+    sizes = compute_label_sizes(data)
+
+    unique_labels = np.unique(data)
+    unique_labels = unique_labels[unique_labels != 0]
+
+    filtered_labels = []
+
+    for lbl in unique_labels:
+
+        if is_2d_label(bboxes, lbl):
+            logging.info(f"Skipping 2D artefact label {lbl}")
+            continue
+
+        if is_too_small_label(lbl, sizes, min_size):
+            logging.info(f"Skipping tiny label {lbl}")
+            continue
+
+        filtered_labels.append(lbl)
+
+    return np.array(filtered_labels)
+
 
 def labels_to_meshes(
-    labels: np.ndarray,
+    data: np.ndarray,
     voxel_size: Sequence[float],
     callus_id: str,
     output_dir: Path,
@@ -52,7 +93,7 @@ def labels_to_meshes(
     for each label that meets the heuristics.
 
     Args:
-        labels (np.ndarray): 3D labeled image (ZYX).
+        data (np.ndarray): 3D labeled image (ZYX).
         voxel_size (Sequence[float]): Voxel size in micrometers (zyx).
         output_dir (Path): Directory where meshes are written.
         min_size (int): Minimum voxel count for a label to be exported.
@@ -64,14 +105,12 @@ def labels_to_meshes(
         pd.DataFrame: Dataframe containing calculated features from meshes if
             extract_features was set to `True`.
     """
-    vtk_img = numpy_to_vtk_image(labels, voxel_size)
+    vtk_img = numpy_to_vtk_image(data, voxel_size)
 
-    bboxes = compute_label_bboxes(labels)
-    sizes = compute_label_sizes(labels)
     age = calculate_age_from_id(callus_id)
 
-    unique_labels = np.unique(labels)
-    unique_labels = unique_labels[unique_labels != 0]
+    # Analysis only on unique labels, that are no artefacts (small, 2D labels)
+    filtered_labels = filter_unique_labels(data, min_size=min_size)
 
     feature_rows = []
 
@@ -79,7 +118,7 @@ def labels_to_meshes(
 
         logger.info("Extracting whole tissue...")
 
-        binary = (labels > 0).astype(np.uint8)
+        binary = (data > 0).astype(np.uint8)
         vtk_binary = numpy_to_vtk_image(binary, voxel_size)
 
         tissue_surface = extract_label_surface(vtk_binary, 1)
@@ -98,15 +137,7 @@ def labels_to_meshes(
 
     if extract_cells: # Extract meshes for each cell
 
-        for lbl in unique_labels:
-
-            if is_2d_label(bboxes, lbl):
-                logging.info(f"Skipping 2D artefact label {lbl}")
-                continue
-
-            if is_too_small_label(lbl, sizes, min_size):
-                logging.info(f"Skipping tiny label {lbl}")
-                continue
+        for lbl in filtered_labels:
 
             logging.info(f"Extracting cell {lbl}")
 
@@ -144,13 +175,13 @@ def main():
     callus_id = h5_path.stem
     output_dir = Path('.data/test_output')
     output_dir.mkdir(exist_ok=True, parents=True)
-    MIN_SIZE=5000
+    MIN_SIZE=50000
 
-    labels = load_h5(h5_path, h5_key)
+    data = load_h5(h5_path, h5_key)
     voxel_size = read_h5_voxel_size(h5_path, h5_key)
 
     labels_to_meshes(
-        labels,
+        data,
         voxel_size,
         callus_id,
         output_dir=output_dir,
