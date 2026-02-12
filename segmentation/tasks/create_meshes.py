@@ -13,7 +13,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from segmentation.core.io import load_h5, read_h5_voxel_size, calculate_age_from_id
+from segmentation.core.io import (
+    load_h5, 
+    read_h5_voxel_size, 
+    calculate_age_from_id, 
+    save_df_to_csv,
+)
 from segmentation.core.meshes import (
     compute_label_bboxes,
     compute_label_sizes,
@@ -39,7 +44,7 @@ def labels_to_meshes(
     extract_cells: bool=True,
     extract_tissue: bool=True,
     calculate_features: bool=True,
-) -> pd.DataFrame | None:
+) -> None:
     """Extract and save surface meshes from a labeled volume.
 
     The function writes a tissue mesh file named ``tissue.ply`` (when
@@ -124,7 +129,8 @@ def labels_to_meshes(
         features = pd.DataFrame(feature_rows)
         logger.debug(f'\n{features.head()}')
 
-        return features
+        output_path = output_dir / f'{callus_id}_features.csv'
+        save_df_to_csv(features, output_path)
 
 
 def main():
@@ -143,7 +149,7 @@ def main():
     labels = load_h5(h5_path, h5_key)
     voxel_size = read_h5_voxel_size(h5_path, h5_key)
 
-    features = labels_to_meshes(
+    labels_to_meshes(
         labels,
         voxel_size,
         callus_id,
