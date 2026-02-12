@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 
 from segmentation.core.io import load_h5, read_h5_voxel_size
-from segmentation.core.logger import setup_logging
 from segmentation.core.meshes import (
     compute_label_bboxes,
     compute_label_sizes,
@@ -29,7 +28,6 @@ from segmentation.core.meshes import (
 
 # Configure logging
 logger = logging.getLogger(__name__)
-setup_logging(logging.DEBUG)
 
 
 def labels_to_meshes(
@@ -143,7 +141,7 @@ def main():
         min_size=MIN_SIZE,
         extract_cells=True,
         extract_tissue=True,
-        calculate_features=False,
+        calculate_features=True,
     )
 
 if __name__ == "__main__":

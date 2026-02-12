@@ -13,7 +13,7 @@ from vtkmodules.util.data_model import PolyData
 from vtkmodules.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 from vtkmodules.vtkCommonCore import VTK_INT
 from vtkmodules.vtkCommonDataModel import vtkImageData
-from vtkmodules.vtkFiltersCore import vtkConnectivityFilter, vtkMassProperties
+from vtkmodules.vtkFiltersCore import vtkConnectivityFilter, vtkMassProperties, vtkFeatureEdges
 from vtkmodules.vtkFiltersGeneral import vtkDiscreteMarchingCubes
 from vtkmodules.vtkIOGeometry import vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYWriter
@@ -222,13 +222,30 @@ def compute_bbox(polydata) -> tuple:
     return (dx, dy, dz)
 
 
+def is_mesh_watertight(polydata):
+    """
+    Returns True if mesh is watertight (no boundary edges).
+    """
+
+    feat_edges = vtkFeatureEdges()
+    feat_edges.SetInputData(polydata)
+    feat_edges.BoundaryEdgesOn()      # edges used by only 1 face
+    feat_edges.FeatureEdgesOff()
+    feat_edges.ManifoldEdgesOff()
+    feat_edges.NonManifoldEdgesOff()
+    feat_edges.Update()
+
+    n_boundary_edges = feat_edges.GetOutput().GetNumberOfCells()
+
+    return n_boundary_edges == 0
+
+
 def extract_features(polydata):
 
     volume, area = compute_volume_area(polydata)
-
     bounds = compute_bbox(polydata)
-
     sphericity = compute_sphericity(volume, area)
+    watertight = is_mesh_watertight(polydata)
 
     logger.debug(f'Sanity check: Coordinates of polydata are {polydata.GetPoint(0)}')
 
@@ -241,6 +258,7 @@ def extract_features(polydata):
         "sphericity": sphericity,
         "n_vertices": polydata.GetNumberOfPoints(),
         "n_faces": polydata.GetNumberOfCells(),
+        "watertight": watertight,
     }
 
 
