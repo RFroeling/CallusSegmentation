@@ -125,25 +125,29 @@ class ImageReviewer(tk.Tk):
     def ui_elements(self):
         """Creates all widgets and binds events."""
 
-        # --- Canvas for image display ---
-        self.canvas = tk.Label(self, bg='lightgrey')
+        # Canvas for image display
+        self.canvas = tk.Label(self, text=
+                               "Open folder containing .pngs that need reviewing" \
+                               "\n Use buttons or <A> and <D> to save decision" \
+                               "\n Use <Left> and <Right> to navigate ", 
+                               fg='grey', bg='lightgrey')
         self.canvas.pack(fill="both", expand=True, padx=5, pady=5)
 
-        # --- Controls frame ---
+        # Controls frame
         self.controls = tk.Frame(self)
         self.controls.pack(fill="x", padx=5, pady=5)
 
-        # --- Left: Open Folder button ---
+        # Left: Open Folder button
         self.open_button = tk.Button(
             self.controls, text="Open Folder", command=self.open_folder
         )
         self.open_button.grid(row=0, column=0, sticky="w", padx=5)
 
-        # --- Center: filename label ---
+        # Center: filename label
         self.filename_label = tk.Label(self.controls, text="", anchor="center")
         self.filename_label.grid(row=0, column=1, sticky="ew", padx=5)
 
-        # --- Right: Accept + Decline horizontal ---
+        # Right: Decision buttons
         right_frame = tk.Frame(self.controls)
         right_frame.grid(row=0, column=2, sticky="e", padx=5)
 
@@ -160,20 +164,22 @@ class ImageReviewer(tk.Tk):
         self.accept_button.pack(side="left", padx=(0,5))
         self.decline_button.pack(side="left")
 
-        # --- Configure column weights for flexible resizing ---
+        # Configure column weights for flexible resizing
         self.controls.columnconfigure(0, weight=1)  # left
         self.controls.columnconfigure(1, weight=2)  # center (filename label stretches)
         self.controls.columnconfigure(2, weight=1)  # right
 
-        # --- Progress label below controls ---
+        # Progress label below controls
         self.progress_label = tk.Label(self, text="No files loaded")
         self.progress_label.pack(pady=5)
 
-        # --- Key bindings ---
+        # Key bindings
         self.bind("<a>", lambda e: self.sort_file("accepted"))
         self.bind("<d>", lambda e: self.sort_file("declined"))
         self.bind("<A>", lambda e: self.sort_file("accepted"))
         self.bind("<D>", lambda e: self.sort_file("declined"))
+        self.bind("<Left>", lambda e: self.navigate(-1))
+        self.bind("<Right>", lambda e: self.navigate(1))
 
 
     def state_variables(self):
@@ -391,12 +397,31 @@ class ImageReviewer(tk.Tk):
             self.progress_label.config(text="Review complete")
             self.filename_label.config(text="")  # clear filename when finished
 
+    
+    def navigate(self, step):
+        """Move through images without making decisions."""
+        if not self.files:
+            return  # No files loaded
+
+        new_index = self.index + step
+        # Clamp index within valid range
+        if new_index < 0:
+            messagebox.showinfo("Start", "This is the first image.")
+            return
+        elif new_index >= len(self.files):
+            messagebox.showinfo("End", "This is the last image.")
+            return
+
+        self.index = new_index
+        self.show_file()
+
 
     def update_progress(self):
         """Update progress label"""
         total = len(self.files)
         current = self.index + 1
         self.progress_label.config(text=f"Item {current}/{total}")
+
 
     def run(self):
         self.mainloop()
