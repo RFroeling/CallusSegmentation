@@ -77,6 +77,14 @@ uv run run_segmentation.py --review
 
 Launch an interactive GUI for reviewing segmentation results. Use this to validate automated results and identify any artifacts.
 
+### Create meshes
+
+```bash
+uv run run_segmentation.py --meshing
+```
+
+Create 3D meshes from segmented and cleaned image files. Automatically saves mesh features.
+
 ### Inspect H5 Files
 
 ```bash
@@ -95,10 +103,12 @@ CallusSegmentation/
 │   │   ├── cleaning.py               # Image cleaning functions
 │   │   ├── io.py                     # File I/O operations
 │   │   ├── logger.py                 # Logging configuration
+│   │   ├── meshes.py                 # Mesh operations
 │   │   └── views.py                  # Visualization tools
 │   └── tasks/                        # Individual workflow tasks
 │       ├── clean_edges.py            # Edge cleaning workflow
 │       ├── convert_lif.py            # LIF to OME-TIFF conversion
+│       ├── create_meshes.py          # Mesh creation from segmented files
 │       ├── inspect_h5.py             # H5 file inspection
 │       ├── move_files.py             # File management utilities
 │       ├── review.py                 # Image review interface
@@ -111,6 +121,7 @@ CallusSegmentation/
 ## Dependencies
 
 - **plantseg** (2.0.0rc12): Deep learning segmentation
+- **VTK**: Meshing
 - **bioio**: General image I/O support
 - **bioio-lif** & **bioio-ome-tiff**: Format-specific readers/writers
 - **h5py**: HDF5 file handling
