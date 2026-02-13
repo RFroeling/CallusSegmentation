@@ -13,7 +13,7 @@ from vtkmodules.util.data_model import PolyData
 from vtkmodules.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 from vtkmodules.vtkCommonCore import VTK_INT
 from vtkmodules.vtkCommonDataModel import vtkImageData
-from vtkmodules.vtkFiltersCore import vtkConnectivityFilter, vtkMassProperties, vtkFeatureEdges
+from vtkmodules.vtkFiltersCore import vtkConnectivityFilter, vtkFeatureEdges, vtkMassProperties
 from vtkmodules.vtkFiltersGeneral import vtkDiscreteMarchingCubes
 from vtkmodules.vtkIOGeometry import vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYWriter

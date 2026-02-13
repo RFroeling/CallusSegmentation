@@ -14,12 +14,13 @@ import numpy as np
 import pandas as pd
 
 from segmentation.core.io import (
-    load_h5, 
-    read_h5_voxel_size, 
-    calculate_age_from_id, 
+    calculate_age_from_id,
+    load_h5,
+    read_h5_voxel_size,
     save_df_to_csv,
 )
 from segmentation.core.meshes import (
+    compute_contacts_and_neighbors,
     compute_label_bboxes,
     compute_label_sizes,
     extract_features_from_mesh,
@@ -29,7 +30,6 @@ from segmentation.core.meshes import (
     keep_largest_component,
     numpy_to_vtk_image,
     save_mesh,
-    compute_contacts_and_neighbors,
 )
 
 # Configure logging

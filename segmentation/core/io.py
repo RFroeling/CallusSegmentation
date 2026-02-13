@@ -1,9 +1,9 @@
 """Module that provides functionality to deal with .h5 datasets."""
 import logging
 from collections.abc import Sequence
+from datetime import datetime
 from os.path import getsize
 from pathlib import Path
-from datetime import datetime
 
 import bioio_lif
 import h5py
