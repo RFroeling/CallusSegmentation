@@ -29,13 +29,11 @@ from segmentation.core.meshes import (
     keep_largest_component,
     numpy_to_vtk_image,
     save_mesh,
+    compute_contacts_and_neighbors,
 )
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
-import numpy as np
-import logging
 
 
 def filter_unique_labels(data: np.ndarray, min_size: int) -> np.ndarray:
@@ -107,10 +105,12 @@ def labels_to_meshes(
     """
     vtk_img = numpy_to_vtk_image(data, voxel_size)
 
-    age = calculate_age_from_id(callus_id)
-
     # Analysis only on unique labels, that are no artefacts (small, 2D labels)
     filtered_labels = filter_unique_labels(data, min_size=min_size)
+
+
+    age = calculate_age_from_id(callus_id)
+    contact_pairs, background_contact, neighbor_count = compute_contacts_and_neighbors(data, filtered_labels, voxel_size)
 
     feature_rows = []
 
@@ -127,7 +127,7 @@ def labels_to_meshes(
 
         if calculate_features:
             tissue_features = extract_features_from_mesh(tissue_surface)
-            tissue_features.update({'Label': 'tissue', 
+            tissue_features.update({'label': 'tissue', 
                                     'callus_id': callus_id, 
                                     'age': age,
                                     })
@@ -148,9 +148,16 @@ def labels_to_meshes(
 
             if calculate_features:
                 cell_features = extract_features_from_mesh(surface)
-                cell_features.update({'Label': f'cell_{lbl:03d}', 
+                neighbour_area = sum(
+                    area for (l1, l2), area in contact_pairs.items() 
+                    if lbl in (l1, l2) and 0 not in (l1, l2)
+                    )
+                cell_features.update({'label': f'cell_{lbl:03d}', 
                                       'callus_id': callus_id, 
                                       'age': age,
+                                      'neighbors': int(neighbor_count[lbl]),
+                                      'neighbor_area': neighbour_area,
+                                      'background_area': background_contact[lbl],
                                       })
                 feature_rows.append(cell_features)
 
@@ -175,7 +182,7 @@ def main():
     callus_id = h5_path.stem
     output_dir = Path('.data/test_output')
     output_dir.mkdir(exist_ok=True, parents=True)
-    MIN_SIZE=50000
+    MIN_SIZE=1000
 
     data = load_h5(h5_path, h5_key)
     voxel_size = read_h5_voxel_size(h5_path, h5_key)

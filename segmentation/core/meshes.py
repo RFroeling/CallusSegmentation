@@ -238,62 +238,87 @@ def is_mesh_watertight(polydata):
 
     return n_boundary_edges == 0
 
-# TODO: Requires implementation
 
-# def compute_contacts_and_neighbors(
-#         labels: np.ndarray, 
-#         voxel_size: Sequence[float]
-#         ) -> tuple[dict]:
+def compute_contacts_and_neighbors(
+        data: np.ndarray,
+        labels: np.ndarray,
+        voxel_size: Sequence[float]
+        ):
+    """
+    Compute contact surface areas and neighbor relationships for selected
+    labels in a 3D volume.
 
-#     sz, sy, sx = voxel_size
+    Contacts with any other label (even if not in `labels`) are measured,
+    but results are only stored for labels listed in `labels`.
 
-#     face_defs = [
-#         ((1,0,0), sy*sx),
-#         ((0,1,0), sz*sx),
-#         ((0,0,1), sz*sy),
-#     ]
+    Background is assumed to be label 0.
+    """
 
-#     contact_pairs = {}
-#     background_contact = {}
-#     neighbors = {}
+    valid = set(labels)
 
-#     unique = np.unique(labels)
-#     unique = unique[unique != 0]
+    sz, sy, sx = voxel_size
 
-#     for lbl in unique:
-#         neighbors[lbl] = set()
-#         background_contact[lbl] = 0.0
+    face_defs = [
+        ((1,0,0), sy*sx),  # z faces
+        ((0,1,0), sz*sx),  # y faces
+        ((0,0,1), sz*sy),  # x faces
+    ]
 
-#     for shift, face_area in face_defs:
+    contact_pairs = {}
+    background_contact = {lbl: 0.0 for lbl in valid}
+    neighbors = {lbl: set() for lbl in valid}
 
-#         shifted = np.roll(labels, shift=shift, axis=(0,1,2))
-#         diff = labels != shifted
+    for shift, face_area in face_defs:
 
-#         a = labels[diff]
-#         b = shifted[diff]
+        shifted = np.roll(data, shift=shift, axis=(0,1,2))
+        diff = data != shifted
 
-#         for lbl1, lbl2 in zip(a, b):
+        a = data[diff]
+        b = shifted[diff]
 
-#             if lbl1 == 0 and lbl2 == 0:
-#                 continue
+        for lbl1, lbl2 in zip(a, b):
 
-#             if lbl1 == 0:
-#                 background_contact[lbl2] += face_area
-#                 continue
+            # Ignore background-background
+            if lbl1 == 0 and lbl2 == 0:
+                continue
 
-#             if lbl2 == 0:
-#                 background_contact[lbl1] += face_area
-#                 continue
+            # Background contact
+            if lbl1 == 0:
+                if lbl2 in valid:
+                    background_contact[lbl2] += face_area
+                continue
 
-#             if lbl1 != lbl2:
-#                 key = tuple(sorted((lbl1, lbl2)))
-#                 contact_pairs[key] = contact_pairs.get(key, 0.0) + face_area
-#                 neighbors[lbl1].add(lbl2)
-#                 neighbors[lbl2].add(lbl1)
+            if lbl2 == 0:
+                if lbl1 in valid:
+                    background_contact[lbl1] += face_area
+                continue
 
-#     neighbor_count = {k: len(v) for k, v in neighbors.items()}
+            # Region-region contact
+            if lbl1 != lbl2:
 
-#     return contact_pairs, background_contact, neighbor_count
+                # Case 1: both labels are valid → store symmetric pair
+                if lbl1 in valid and lbl2 in valid:
+                    key = tuple(sorted((lbl1, lbl2)))
+                    contact_pairs[key] = contact_pairs.get(key, 0.0) + face_area
+
+                    neighbors[lbl1].add(lbl2)
+                    neighbors[lbl2].add(lbl1)
+
+                # Case 2: only lbl1 is valid
+                elif lbl1 in valid:
+                    key = (lbl1, lbl2)
+                    contact_pairs[key] = contact_pairs.get(key, 0.0) + face_area
+
+                # Case 3: only lbl2 is valid
+                elif lbl2 in valid:
+                    key = (lbl2, lbl1)
+                    contact_pairs[key] = contact_pairs.get(key, 0.0) + face_area
+
+                # Case 4: neither valid → ignore
+
+    neighbor_count = {key: len(value) for key, value in neighbors.items()}
+
+    return contact_pairs, background_contact, neighbor_count
 
 
 def extract_features_from_mesh(polydata):

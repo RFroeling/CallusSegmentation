@@ -11,7 +11,10 @@ Google-style docstrings are used for functions in this module.
 """
 
 import argparse
+import logging
 from pathlib import Path
+
+from segmentation.core.logger import setup_logging
 
 
 def create_parser():
@@ -127,6 +130,10 @@ def create_meshes():
 
 def main():
     """Main function to parse arguments and call corresponding functionality."""
+    # Configure logging
+    logger = logging.getLogger(__name__)
+    setup_logging()
+
     args = create_parser()
 
     if args.review:
