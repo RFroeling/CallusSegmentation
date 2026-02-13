@@ -406,10 +406,8 @@ class ImageReviewer(tk.Tk):
         new_index = self.index + step
         # Clamp index within valid range
         if new_index < 0:
-            messagebox.showinfo("Start", "This is the first image.")
             return
         elif new_index >= len(self.files):
-            messagebox.showinfo("End", "This is the last image.")
             return
 
         self.index = new_index
