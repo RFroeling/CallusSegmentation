@@ -3,6 +3,7 @@ import tkinter as tk
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox
+from shutil import move
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -184,7 +185,7 @@ class ImageReviewer(tk.Tk):
 
     def state_variables(self):
         """Define empty state variables"""
-        self.folder = None
+        self.folder = Path.cwd()
         self.files = []
         self.all_files = []
         self.reviewed_files = []
@@ -334,7 +335,7 @@ class ImageReviewer(tk.Tk):
             self.filename_label.config(text="")  # clear filename when done
             return
 
-        if not self.folder:
+        if self.folder == Path.cwd() or not self.folder.is_dir(): # I.e. no path selected
             messagebox.showerror("Error", "No folder selected")
             return
 
@@ -368,6 +369,11 @@ class ImageReviewer(tk.Tk):
 
     def sort_file(self, decision):
         """ Function to sort file based on user decision"""
+        # Move associated .h5 file
+        if not self.move_associated_h5(decision):
+            return 
+
+        # If succes > add logging
         if self.log_file:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             fname = self.files[self.index].name
@@ -398,6 +404,57 @@ class ImageReviewer(tk.Tk):
             self.filename_label.config(text="")  # clear filename when finished
 
     
+    def move_associated_h5(self, decision):
+        """Move associated h5 file. Returns True if success, False if failed."""
+        target_dir = self.parent / 'h5' / decision
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        png_name = self.files[self.index].name
+        h5_name = png_name.replace('comparison_', "").replace('.png', '.h5')
+
+        source_h5 = self.parent / 'h5' / 'clean' / h5_name
+        dest_h5 = target_dir / h5_name
+
+        # Validation checks
+        if not source_h5.exists():
+            messagebox.showerror(
+                "Missing H5 file",
+                f"Expected file not found:\n{source_h5}\n\n"
+                "Decision cancelled."
+            )
+            return False
+
+        if dest_h5.exists():
+            resp = messagebox.askyesno(
+                "File exists",
+                f"{dest_h5.name} already exists in target folder.\n"
+                "Overwrite?"
+            )
+            if not resp:
+                return False
+            dest_h5.unlink()
+
+        # Try moving
+        try:
+            move(str(source_h5), str(dest_h5))
+            return True
+
+        except PermissionError:
+            messagebox.showerror(
+                "Permission error",
+                f"Cannot move file:\n{source_h5}\n\n"
+                "The file may be open in another program."
+            )
+            return False
+
+        except Exception as e:
+            messagebox.showerror(
+                "Move failed",
+                f"Unexpected error while moving file:\n{source_h5}\n\n{e}"
+            )
+            return False
+
+
     def navigate(self, step):
         """Move through images without making decisions."""
         if not self.files:
