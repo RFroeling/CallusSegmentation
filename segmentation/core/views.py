@@ -130,7 +130,8 @@ class ImageReviewer(tk.Tk):
         self.canvas = tk.Label(self, text=
                                "Open folder containing .pngs that need reviewing" \
                                "\n Use buttons or <A> and <D> to save decision" \
-                               "\n Use <Left> and <Right> to navigate ", 
+                               "\n Use <Left> and <Right> to navigate " \
+                               "\n Use CRTL + Z to undo (in MOVE mode)", 
                                fg='grey', bg='lightgrey')
         self.canvas.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -181,6 +182,8 @@ class ImageReviewer(tk.Tk):
         self.bind("<D>", lambda e: self.sort_file("declined"))
         self.bind("<Left>", lambda e: self.navigate(-1))
         self.bind("<Right>", lambda e: self.navigate(1))
+        self.bind("<Control-z>", lambda e: self.undo_last_action())
+        self.bind("<Control-Z>", lambda e: self.undo_last_action())
 
 
     def state_variables(self):
@@ -194,6 +197,7 @@ class ImageReviewer(tk.Tk):
         self.frame_index = 0
         self.log_file = None
         self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
+        self.history = []
 
 
     def set_icon(self):
@@ -202,6 +206,25 @@ class ImageReviewer(tk.Tk):
 
         if icon_path.exists():
             self.iconphoto(False, tk.PhotoImage(file=icon_path))
+
+
+    def restore_h5_files_from_log(self):
+        # Move all h5 files from accepted/declined back to clean
+        for _, row in self.df.iterrows():
+            png_name = row["FileName"]
+            h5_name = png_name.replace('comparison_', "").replace('.png', '.h5')
+            for decision in ["accepted", "declined"]:
+                src = self.parent / 'h5' / decision / h5_name
+                dst = self.parent / 'h5' / 'clean' / h5_name
+                if src.exists():
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    try:
+                        move(str(src), str(dst))
+                    except Exception as e:
+                        messagebox.showwarning(
+                            "Restore error",
+                            f"Could not move {src} back to clean folder:\n{e}"
+                        )
 
 
     def open_folder(self):
@@ -269,6 +292,7 @@ class ImageReviewer(tk.Tk):
                     "Re-review all files? (Yes = all files, No = only new files)"
                 )
                 if resp:
+                    self.restore_h5_files_from_log()
                     # Reset log and review all files
                     self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
                     try:
@@ -290,6 +314,7 @@ class ImageReviewer(tk.Tk):
                     \nDo you want to re-review all files?"
                 )
                 if resp:
+                    self.restore_h5_files_from_log()
                     self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
                     try:
                         self.df.to_csv(self.log_file, index=False)
@@ -371,7 +396,7 @@ class ImageReviewer(tk.Tk):
         """ Function to sort file based on user decision"""
         # Move associated .h5 file
         if not self.move_associated_h5(decision):
-            return 
+            return
 
         # If succes > add logging
         if self.log_file:
@@ -437,6 +462,12 @@ class ImageReviewer(tk.Tk):
         # Try moving
         try:
             move(str(source_h5), str(dest_h5))
+            self.history.append({
+            "filename": h5_name,
+            "decision": decision,
+            "source": str(dest_h5),     # where it was moved TO
+            "destination": str(source_h5)  # original location
+            })
             return True
 
         except PermissionError:
@@ -454,6 +485,41 @@ class ImageReviewer(tk.Tk):
             )
             return False
 
+    def undo_last_action(self):
+        """Undo the most recent decision."""
+        
+        if not self.history:
+            return
+
+        last_action = self.history.pop()
+
+        source = Path(last_action["source"])
+        destination = Path(last_action["destination"])
+        filename = last_action["filename"]
+
+        try:
+            # Move file back
+            if source.exists():
+                move(str(source), str(destination))
+
+            # Remove entry from dataframe
+            self.df = self.df[self.df["FileName"] != filename]
+
+            # Rewrite log file
+            if self.log_file:
+                self.df.to_csv(self.log_file, index=False)
+
+            # Move index back
+            self.index = max(0, self.index - 1)
+
+            # Show file again
+            self.show_file()
+
+        except Exception as e:
+            messagebox.showerror(
+                "Undo failed",
+                f"Could not undo action:\n{e}"
+            )
 
     def navigate(self, step):
         """Move through images without making decisions."""
