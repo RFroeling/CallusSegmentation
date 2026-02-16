@@ -115,7 +115,7 @@ def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.nd
     return dataset, cleaned_dataset
 
 
-def main(input_path: Path, segmentation_key: str):
+def main(input_dir: Path, segmentation_key: str, move: bool=True):
     """Process all configured .h5 files and save cleaned segmentations.
 
     Iterates over the files returned by :func:`segmentation.core.io.get_h5_files`,
@@ -123,9 +123,11 @@ def main(input_path: Path, segmentation_key: str):
     stores the cleaned segmentation under the key ``'cleaned'``. Errors are
     logged and collected in ``failed_files`` for reporting.
     """
+    input_dir, output_dir = resolve_h5_dirs(input_dir, move=move)
+    
     failed_files = []
 
-    h5_files = get_h5_files(input_path)
+    h5_files = get_h5_files(input_dir)
 
     for h5_file in h5_files:
         try:
@@ -134,10 +136,14 @@ def main(input_path: Path, segmentation_key: str):
             cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save=True)
             voxel_size = read_h5_voxel_size(path=h5_file, key=segmentation_key)
             save_h5(h5_file, cleaned_segmentation, voxel_size=voxel_size, key='cleaned')
+            if move:
+                move_h5(h5_file, output_dir)
             logger.info(f"✓ {h5_file.name} processed successfully")
+        
         except (FileNotFoundError, KeyError) as e:
             logger.error(f"✗ {h5_file.name}: {e}")
             failed_files.append((h5_file.name, str(e)))
+        
         except Exception as e:
             logger.error(f"✗ {h5_file.name}: Unexpected error: {type(e).__name__}: {e}")
             failed_files.append((h5_file.name, str(e)))
