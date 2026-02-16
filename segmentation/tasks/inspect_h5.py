@@ -48,7 +48,3 @@ def main():
             break
         except ValueError:
             print("Invalid input. Please enter a number or 'all'.")
-
-
-if __name__ == "__main__":
-    main()

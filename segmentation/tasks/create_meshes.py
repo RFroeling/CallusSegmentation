@@ -197,6 +197,3 @@ def main():
         extract_tissue=True,
         calculate_features=True,
     )
-
-if __name__ == "__main__":
-    main()

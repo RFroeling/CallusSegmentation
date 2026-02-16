@@ -61,7 +61,3 @@ def main():
         files = input.glob('*.lif')
         for file in files:
             convert(file, out_dir)
-
-
-if __name__ == '__main__':
-    main()
