@@ -45,7 +45,7 @@ def create_parser():
         help="Dataset key for segmentation",
     )
     clean_parser.set_defaults(
-        func=lambda args: clean_edges(args.input, args.key)
+        func=lambda args: run_clean_edges(args.input, args.key)
     )
 
     # ---------------- Convert ----------------
@@ -53,14 +53,14 @@ def create_parser():
         "convert",
         help="Convert .lif images to OME-TIFF",
     )
-    convert_parser.set_defaults(func=lambda args: convert_images())
+    convert_parser.set_defaults(func=lambda args: run_convert_lif())
 
     # ---------------- Inspect ----------------
     inspect_parser = subparsers.add_parser(
         "inspect",
         help="Inspect contents of .h5 file",
     )
-    inspect_parser.set_defaults(func=lambda args: inspect_file())
+    inspect_parser.set_defaults(func=lambda args: run_inspect_h5())
 
     # ---------------- PlantSeg ----------------
     plantseg_parser = subparsers.add_parser(
@@ -81,7 +81,7 @@ def create_parser():
         "meshing",
         help="Produce meshes from .h5 files",
     )
-    meshing_parser.set_defaults(func=lambda args: create_meshes())
+    meshing_parser.set_defaults(func=lambda args: run_create_meshes())
 
     # ---------------- Headless ----------------
     headless_parser = subparsers.add_parser(
@@ -93,7 +93,7 @@ def create_parser():
         type=Path,
         help="Path to LIF file or directory",
     )
-    headless_parser.set_defaults(func=lambda args: headless_workflow(args.path))
+    headless_parser.set_defaults(func=lambda args: run_headless_workflow(args.path))
     
     return parser.parse_args()
 
@@ -109,7 +109,7 @@ def launch_reviewer():
     viewer.run()
 
 
-def clean_edges(h5_path, segmentation_key):
+def run_clean_edges(h5_path, segmentation_key):
     """Run the boundary-cleaning task.
 
     Imports and runs :func:`segmentation.tasks.clean_edges.main`.
@@ -119,7 +119,7 @@ def clean_edges(h5_path, segmentation_key):
     main(h5_path, segmentation_key)
 
 
-def convert_images():
+def run_convert_lif():
     """Run the image conversion task to produce OME-TIFF files.
 
     Imports and runs :func:`segmentation.tasks.convert_lif.main`.
@@ -129,7 +129,7 @@ def convert_images():
     main()
 
 
-def inspect_file():
+def run_inspect_h5():
     """Run the interactive HDF5 inspection utility.
 
     Imports and runs :func:`segmentation.tasks.inspect_h5.main`.
@@ -144,12 +144,12 @@ def run_plantseg_workflow(yaml_path: Path):
     Args:
         yaml_path (Path): Path to the PlantSeg YAML configuration file.
     """
-    from segmentation.tasks.run_plantseg_workflow import main
+    from segmentation.tasks.plantseg_workflow import main
 
     main(yaml_path)
 
 
-def create_meshes():
+def run_create_meshes():
     """Runs a meshing task on .h5 files in input_path.
 
     Args:
@@ -160,7 +160,7 @@ def create_meshes():
     main()
 
 
-def headless_workflow(path):
+def run_headless_workflow(path):
     # TODO
     # Implement correct file handling; fixed relative paths in workflow, 
     # CLI paths (and keys) for separate tasks
