@@ -53,7 +53,13 @@ def create_parser():
         "convert",
         help="Convert .lif images to OME-TIFF",
     )
-    convert_parser.set_defaults(func=lambda args: run_convert_lif())
+    convert_parser.add_argument(
+        "--input",
+        required=True,
+        type=Path,
+        help="Either .LIF file or directory containing .LIF files.",
+    )
+    convert_parser.set_defaults(func=lambda args: run_convert_lif(args.input))
 
     # ---------------- Inspect ----------------
     inspect_parser = subparsers.add_parser(
@@ -119,14 +125,14 @@ def run_clean_edges(h5_path, segmentation_key):
     main(h5_path, segmentation_key)
 
 
-def run_convert_lif():
+def run_convert_lif(input_path):
     """Run the image conversion task to produce OME-TIFF files.
 
     Imports and runs :func:`segmentation.tasks.convert_lif.main`.
     """
     from segmentation.tasks.convert_lif import main
 
-    main()
+    main(input_path)
 
 
 def run_inspect_h5():
