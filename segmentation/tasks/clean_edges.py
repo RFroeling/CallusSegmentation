@@ -6,11 +6,9 @@ including those that touch the volume boundary.
 """
 
 import logging
-import os
 from pathlib import Path
 
 import numpy as np
-from dotenv import load_dotenv
 
 from segmentation.core.cleaning import (
     apply_mask,
@@ -23,7 +21,7 @@ from segmentation.core.cleaning import (
     make_binary,
     remove_labels,
 )
-from segmentation.core.io import get_h5_files, load_h5, read_h5_voxel_size, save_h5
+from segmentation.core.io import get_h5_files, load_h5, move_h5, read_h5_voxel_size, save_h5
 from segmentation.core.logger import setup_logging
 from segmentation.core.views import cleaning_comparison_plot
 
@@ -31,28 +29,36 @@ from segmentation.core.views import cleaning_comparison_plot
 logger = logging.getLogger(__name__)
 setup_logging()
 
-# Configure environment
-load_dotenv()
-data_path_env = os.getenv('DATA_PATH')
-if not data_path_env or data_path_env == "path/to/your/data":
-    logger.error(
-        "Environment variable DATA_PATH is not set. " \
-        "Please configure .env with DATA_PATH pointing to your data directory."
-        )
-    raise SystemExit("Missing required environment variable: DATA_PATH")
 
-data_path = Path(data_path_env)
-if not data_path.exists():
-    logger.error(f"DATA_PATH '{data_path}' does not exist. Check your .env configuration.")
-    raise SystemExit(f"DATA_PATH does not exist: {data_path}")
+def resolve_h5_dirs(h5_dir: Path | str, move: bool=False) -> tuple[Path, Path]:
+    h5_dir = Path(h5_dir)
 
-key = os.getenv('KEY')
-if not key or key == "your_segmentation_key":
-    logger.error(
-        "Environment variable KEY is not set. " \
-        "Please configure .env with KEY specifying the dataset key to use."
-        )
-    raise SystemExit("Missing required environment variable: KEY")
+    if not h5_dir.is_dir():
+        raise ValueError(f"Expected a directory path, got: {h5_dir}")
+
+    # No movement → same directory
+    if not move:
+        return h5_dir, h5_dir
+
+    # Determine base dataset directory
+    if h5_dir.name == "raw":
+        base = h5_dir.parent
+        input_dir = h5_dir
+    else:
+        base = h5_dir
+        input_dir = base / "raw"
+
+    output_dir = base / "clean"
+
+    # Ensure structure exists
+    input_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Move files to input_dir
+    for file in h5_dir.glob('*.h5'):
+        move_h5(file, input_dir)
+
+    return input_dir, output_dir
 
 
 def post_cleanup(dataset: np.ndarray) -> np.ndarray:
@@ -109,7 +115,7 @@ def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.nd
     return dataset, cleaned_dataset
 
 
-def main():
+def main(input_path: Path, segmentation_key: str):
     """Process all configured .h5 files and save cleaned segmentations.
 
     Iterates over the files returned by :func:`segmentation.core.io.get_h5_files`,
@@ -119,14 +125,14 @@ def main():
     """
     failed_files = []
 
-    h5_files = get_h5_files(data_path)
+    h5_files = get_h5_files(input_path)
 
     for h5_file in h5_files:
         try:
             logger.info(f"Processing {h5_file.name}...")
-            segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, key)
+            segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, segmentation_key)
             cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save=True)
-            voxel_size = read_h5_voxel_size(path=h5_file, key=key)
+            voxel_size = read_h5_voxel_size(path=h5_file, key=segmentation_key)
             save_h5(h5_file, cleaned_segmentation, voxel_size=voxel_size, key='cleaned')
             logger.info(f"✓ {h5_file.name} processed successfully")
         except (FileNotFoundError, KeyError) as e:
@@ -140,7 +146,3 @@ def main():
         logger.warning(f"{len(failed_files)} file(s) failed processing")
     else:
         logger.info("All files processed successfully!")
-
-
-if __name__ == "__main__":
-    main()
