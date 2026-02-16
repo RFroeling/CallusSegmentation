@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from os.path import getsize
 from pathlib import Path
+from shutil import move
 
 import bioio_lif
 import h5py
@@ -38,7 +39,9 @@ def load_h5(path: Path, key: str | None) -> np.ndarray:
     with h5py.File(path, 'r') as f:
         if key not in f:
             available_keys = list(f.keys())
-            raise KeyError(f"Key '{key}' not found in {path.name}. Available keys: {available_keys}")
+            raise KeyError(f"Key '{key}' not found in {path.name}. \
+                           Available keys: {available_keys}" \
+                           )
         dataset = np.array(f[key])
 
     return dataset
@@ -108,11 +111,24 @@ def save_h5(path: Path,
             f[key].attrs["element_size_um"] = voxel_size
 
 
-def move_h5(file: Path, dest_path: Path) -> None:
+def move_h5(file: Path, dest_dir: Path) -> bool:
+    dest_path = dest_dir / file.name
 
-    destination = dest_path / file.name
+    try:
+        move(file, dest_path)
+        return True
 
-    file.rename(destination)
+    except PermissionError:
+        logger.error(
+            f"Cannot move '{file}'. The file is probably open in another program."
+            )
+        return False
+
+    except Exception as e: 
+        logger.error(
+            f"Filesystem error while moving '{file}' -> '{dest_path}': {e}"
+        )
+        return False
 
 
 def get_h5_files(folder_path: Path) -> list[Path]:
@@ -280,3 +296,7 @@ def calculate_age_from_id(id: str) -> int:
 
 def save_df_to_csv(df: pd.DataFrame, output_path: Path) -> None:
     df.to_csv(output_path)
+
+
+def headless_directory_setup():
+    pass
