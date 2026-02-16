@@ -11,58 +11,91 @@ Google-style docstrings are used for functions in this module.
 """
 
 import argparse
-import logging
 from pathlib import Path
 
 from segmentation.core.logger import setup_logging
 
 
 def create_parser():
-    """Create and return the argument parser for the CLI.
+    parser = argparse.ArgumentParser()
 
-    Returns:
-        argparse.Namespace: Parsed command-line arguments.
-    """
-    arg_parser = argparse.ArgumentParser()
-    mode = arg_parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument(
-        "--review",
-        "-r",
-        action='store_true',
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # ---------------- Review ----------------
+    review_parser = subparsers.add_parser(
+        "review",
         help="Launch an instance of the Image Reviewer.",
     )
-    mode.add_argument(
-        "--clean",
-        "-c",
-        action='store_true',
-        help="Cleans images (Specify Path and key in .env file.)",
+    review_parser.set_defaults(func=lambda args: launch_reviewer())
+
+    # ---------------- Clean ----------------
+    clean_parser = subparsers.add_parser(
+        "clean",
+        help="Clean images (requires input path and segmentation key)",
     )
-    mode.add_argument(
-        "--convert",
-        "-cv",
-        action='store_true',
-        help="Converts .lif images to OME-tiff (Specify Paths in .env file.)",
-    )
-    mode.add_argument(
-        "--inspect",
-        "-i",
-        action='store_true',
-        help="Inspects the contents of .h5 file, prints to console.",
-    )
-    mode.add_argument(
-        "--plantseg",
-        "-p",
+    clean_parser.add_argument(
+        "--input",
+        required=True,
         type=Path,
+        help="Directory containing images",
+    )
+    clean_parser.add_argument(
+        "--key",
+        required=True,
+        help="Dataset key for segmentation",
+    )
+    clean_parser.set_defaults(
+        func=lambda args: clean_edges(args.input, args.key)
+    )
+
+    # ---------------- Convert ----------------
+    convert_parser = subparsers.add_parser(
+        "convert",
+        help="Convert .lif images to OME-TIFF",
+    )
+    convert_parser.set_defaults(func=lambda args: convert_images())
+
+    # ---------------- Inspect ----------------
+    inspect_parser = subparsers.add_parser(
+        "inspect",
+        help="Inspect contents of .h5 file",
+    )
+    inspect_parser.set_defaults(func=lambda args: inspect_file())
+
+    # ---------------- PlantSeg ----------------
+    plantseg_parser = subparsers.add_parser(
+        "plantseg",
         help="Run PlantSeg workflow from YAML config file",
     )
-    mode.add_argument(
-        "--meshing",
-        "-m",
-        action='store_true',
-        help="Produce meshes from .h5 files in provided Path",
+    plantseg_parser.add_argument(
+        "config",
+        type=Path,
+        help="Path to YAML config file",
     )
-    # Add arguments here if neccesary
-    return arg_parser.parse_args()
+    plantseg_parser.set_defaults(
+        func=lambda args: run_plantseg_workflow(args.config)
+    )
+
+    # ---------------- Meshing ----------------
+    meshing_parser = subparsers.add_parser(
+        "meshing",
+        help="Produce meshes from .h5 files",
+    )
+    meshing_parser.set_defaults(func=lambda args: create_meshes())
+
+    # ---------------- Headless ----------------
+    headless_parser = subparsers.add_parser(
+        "headless",
+        help="Path to .LIF or directory containing .LIF(s)",
+    )
+    headless_parser.add_argument(
+        "path",
+        type=Path,
+        help="Path to LIF file or directory",
+    )
+    headless_parser.set_defaults(func=lambda args: headless_workflow(args.path))
+    
+    return parser.parse_args()
 
 
 def launch_reviewer():
@@ -76,14 +109,14 @@ def launch_reviewer():
     viewer.run()
 
 
-def clean_edges():
+def clean_edges(h5_path, segmentation_key):
     """Run the boundary-cleaning task.
 
     Imports and runs :func:`segmentation.tasks.clean_edges.main`.
     """
     from segmentation.tasks.clean_edges import main
 
-    main()
+    main(h5_path, segmentation_key)
 
 
 def convert_images():
@@ -127,31 +160,19 @@ def create_meshes():
     main()
 
 
+def headless_workflow(path):
+    # TODO
+    # Implement correct file handling; fixed relative paths in workflow, 
+    # CLI paths (and keys) for separate tasks
+    pass
+
 
 def main():
     """Main function to parse arguments and call corresponding functionality."""
-    # Configure logging
-    logger = logging.getLogger(__name__)
     setup_logging()
-
     args = create_parser()
 
-    if args.review:
-        launch_reviewer()
-    elif args.clean:
-        clean_edges()
-    elif args.convert:
-        convert_images()
-    elif args.inspect:
-        inspect_file()
-    elif args.plantseg:
-        run_plantseg_workflow(args.plantseg)
-    elif args.meshing:
-        create_meshes()
-    else:
-        raise ValueError(
-            "Wrong arguments. Run `segmentation -h` to see the available options."
-        )
+    args.func(args) # Call the function attached to the selected subcommand
 
 
 if __name__ == "__main__":
