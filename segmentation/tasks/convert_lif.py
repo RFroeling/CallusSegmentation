@@ -33,12 +33,12 @@ def main(input_path: Path):
 
     if input_path.is_file():
         output_dir = input_path.parents[1] / 'ometiff'
-        output_dir.mkdir(exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
         convert(input_path, output_dir)
 
     if input_path.is_dir():
         files = input_path.glob('*.lif')
         output_dir = input_path.parents[0] / 'ometiff'
-        output_dir.mkdir(exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
         for file in files:
             convert(file, output_dir)
