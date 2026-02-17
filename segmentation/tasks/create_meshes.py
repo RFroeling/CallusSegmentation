@@ -210,34 +210,44 @@ def h5_to_mesh(h5_path: Path,
     )
 
 
-def main(input_path: Path, cleaned_key: str, headless: bool=True, min_size: int = 1000):
-    """Small test runner that converts a hard-coded test .h5 file to meshes.
+def main(input_path: Path, cleaned_key: str, headless: bool=True, min_size: int=1000):
+    """Convert .h5 datasets to meshes. Accepts file or directory."""
 
-    The function is primarily intended as a convenience for local testing and
-    demonstration; paths and parameters are hard-coded.
-    """
+    if not input_path.exists():
+        raise FileNotFoundError(input_path)
+
+    def process(file: Path):
+        if file.suffix.lower() != ".h5":
+            raise ValueError(f"{file} is not a .h5 dataset")
+
+        base_dir = resolve_dirs(file, headless=headless)
+
+        h5_to_mesh(
+            h5_path=file,
+            cleaned_key=cleaned_key,
+            base_dir=base_dir,
+            min_size=min_size
+        )
+
+    # ---- single file ----
     if input_path.is_file():
-        if input_path.suffix != '.h5':
-            raise ValueError(f'Please provide a dataset in .h5 format')
+        process(input_path)
+        return [input_path]
 
-        base_dir = resolve_dirs(input_path)
+    # ---- directory ----
+    files = list(input_path.glob("*.h5"))
 
-        h5_to_mesh(h5_path=input_path, 
-                   cleaned_key=cleaned_key, 
-                   base_dir=base_dir,
-                   min_size=min_size
-                   )
+    if not files:
+        logger.warning(f"No .h5 files found in directory: {input_path}")
+        return []
 
-    if input_path.is_dir():
-        files = input_path.glob('*.h5')
-        
-        if files == None:
-            logger.warning(f'No .h5 files found in directory: {input_path}')
+    processed = []
 
-        for file in files:
-            base_dir = resolve_dirs(file, headless=headless)
-            h5_to_mesh(h5_path=file, 
-                   cleaned_key=cleaned_key, 
-                   base_dir=base_dir,
-                   min_size=min_size
-                   )
+    for file in files:
+        try:
+            process(file)
+            processed.append(file)
+        except Exception:
+            logger.exception(f"Failed processing {file}")
+
+    return processed
