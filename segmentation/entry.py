@@ -42,6 +42,7 @@ def create_parser():
     clean_parser.add_argument(
         "--key",
         required=True,
+        type=str,
         help="Dataset key for segmentation",
     )
     clean_parser.set_defaults(
@@ -87,7 +88,19 @@ def create_parser():
         "meshing",
         help="Produce meshes from .h5 files",
     )
-    meshing_parser.set_defaults(func=lambda args: run_create_meshes())
+    meshing_parser.add_argument(
+        "--input",
+        required=True,
+        type=Path,
+        help="Either a .h5 file or directory containing .h5 files.",
+    )
+    meshing_parser.add_argument(
+        "--key",
+        required=True,
+        type=str,
+        help="Key to dataset that will be meshed.",
+    )
+    meshing_parser.set_defaults(func=lambda args: run_create_meshes(args.input, args.key))
 
     # ---------------- Headless ----------------
     headless_parser = subparsers.add_parser(
@@ -122,7 +135,7 @@ def run_clean_edges(h5_path, segmentation_key):
     """
     from segmentation.tasks.clean_edges import main
 
-    main(h5_path, segmentation_key)
+    main(h5_path, segmentation_key, move=False)
 
 
 def run_convert_lif(input_path):
@@ -155,7 +168,7 @@ def run_plantseg_workflow(yaml_path: Path):
     main(yaml_path)
 
 
-def run_create_meshes():
+def run_create_meshes(input_path: Path, segmentation_key: str):
     """Runs a meshing task on .h5 files in input_path.
 
     Args:
@@ -163,7 +176,7 @@ def run_create_meshes():
     """
     from segmentation.tasks.create_meshes import main
 
-    main()
+    main(input_path, segmentation_key)
 
 
 def run_headless_workflow(path):

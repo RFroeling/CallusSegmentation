@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 setup_logging()
 
 
-def resolve_h5_dirs(h5_dir: Path | str, move: bool=False) -> tuple[Path, Path]:
+def resolve_h5_dirs(h5_dir: Path | str, move: bool) -> tuple[Path, Path]:
     h5_dir = Path(h5_dir)
 
     if not h5_dir.is_dir():
@@ -115,7 +115,7 @@ def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.nd
     return dataset, cleaned_dataset
 
 
-def main(input_dir: Path, segmentation_key: str, move: bool=True):
+def main(input_dir: Path, segmentation_key: str, move: bool):
     """Process all configured .h5 files and save cleaned segmentations.
 
     Iterates over the files returned by :func:`segmentation.core.io.get_h5_files`,
