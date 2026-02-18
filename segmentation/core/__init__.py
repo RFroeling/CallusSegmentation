@@ -1,4 +1,4 @@
-"""Module containing operations for automatic segmentation of callus tissue."""
+"""Module contains core functionality for segmenting callus images."""
 
 import numpy as np
 

@@ -1,9 +1,25 @@
-# API Reference
+# API reference
 
-## Views
+The project consists of two hierarchical layers. The first layer `core` contains the logic for the core functionality. The layer `tasks` combines elements of the core functionality layer to create tasks.
 
-:::src.segmentation.views
+## core
 
-## H5
+### io
 
-:::src.segmentation.h5
+:::segmentation.core.io
+
+### cleaning
+
+:::segmentation.core.cleaning
+
+### views
+
+:::segmentation.core.views
+
+### meshes
+
+:::segmentation.core.meshes
+
+## tasks
+
+:::segmentation.tasks

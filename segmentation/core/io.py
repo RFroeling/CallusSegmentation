@@ -1,11 +1,15 @@
 """Module that provides functionality to deal with .h5 datasets."""
 import logging
+from collections.abc import Sequence
+from datetime import datetime
 from os.path import getsize
 from pathlib import Path
+from shutil import move
 
 import bioio_lif
 import h5py
 import numpy as np
+import pandas as pd
 from bioio import BioImage
 
 # Define logger
@@ -35,13 +39,51 @@ def load_h5(path: Path, key: str | None) -> np.ndarray:
     with h5py.File(path, 'r') as f:
         if key not in f:
             available_keys = list(f.keys())
-            raise KeyError(f"Key '{key}' not found in {path.name}. Available keys: {available_keys}")
+            raise KeyError(f"Key '{key}' not found in {path.name}. \
+                           Available keys: {available_keys}" \
+                           )
         dataset = np.array(f[key])
 
     return dataset
 
 
-def save_h5(path: Path, stack: np.ndarray, key: str | None, mode: str = "a") -> None:
+def read_h5_voxel_size(
+    path: Path,
+    key: str | None,
+) -> Sequence[float]:
+    """
+    Load the voxel size from a h5 file.
+
+    Args:
+        path (Path): path to the h5 file
+        key (str | None): key of the dataset in the h5 file.
+
+    Returns:
+        np.ndarray: Voxel size (ZYX) represented as a numpy array
+
+    Raises:
+        ValueError: If key is not present in .h5 dataset.
+    """
+    with h5py.File(path, "r") as f:
+        data = f[key]
+
+        if not isinstance(data, h5py.Dataset):
+            raise ValueError(f"'{key}' is not a h5py.Dataset.")
+
+        voxel_size = data.attrs.get("element_size_um", None)
+
+        if voxel_size is None:
+            logger.warning(f"Voxel size not found in {path}.")
+
+    return voxel_size
+
+
+def save_h5(path: Path,
+            stack: np.ndarray,
+            key: str | None,
+            voxel_size: Sequence[float]| None,
+            mode: str = "a"
+    ) -> None:
     """
     Create a dataset inside a h5 file from a numpy array.
 
@@ -49,6 +91,7 @@ def save_h5(path: Path, stack: np.ndarray, key: str | None, mode: str = "a") -> 
         path (Path): path to the h5 file
         stack (np.ndarray): numpy array to save as dataset in the h5 file.
         key (str): key of the dataset in the h5 file.
+        voxel_size (np.ndarray | None): voxel size of the dataset.
         mode (str): mode to open the h5 file ['w', 'a'].
 
     """
@@ -63,13 +106,29 @@ def save_h5(path: Path, stack: np.ndarray, key: str | None, mode: str = "a") -> 
         if key in f:
             del f[key]
         f.create_dataset(key, data=stack, compression="gzip")
+        # save voxel_size
+        if voxel_size is not None:
+            f[key].attrs["element_size_um"] = voxel_size
 
 
-def move_h5(file: Path, dest_path: Path) -> None:
+def move_h5(file: Path, dest_dir: Path) -> bool:
+    dest_path = dest_dir / file.name
 
-    destination = dest_path / file.name
+    try:
+        move(file, dest_path)
+        return True
 
-    file.rename(destination)
+    except PermissionError:
+        logger.error(
+            f"Cannot move '{file}'. The file is probably open in another program."
+            )
+        return False
+
+    except Exception as e: 
+        logger.error(
+            f"Filesystem error while moving '{file}' -> '{dest_path}': {e}"
+        )
+        return False
 
 
 def get_h5_files(folder_path: Path) -> list[Path]:
@@ -109,8 +168,21 @@ def print_h5_metrics(file_path: Path) -> None:
             shape = dataset.shape
             dtype = dataset.dtype
 
+            if "element_size_um" in f[key].attrs:
+                voxel_size = np.asarray(f[key].attrs["element_size_um"])
+                has_voxel = True
+            else:
+                voxel_size = np.empty(3)
+                has_voxel = False
+
             print(f"\nKey: {key}")
             print(f"  Shape: {shape}")
+
+            if has_voxel:
+                print(
+                    f"  Voxel size (zyx): "
+                    f"{voxel_size[0]:.3f} x {voxel_size[1]:.3f} x {voxel_size[2]:.3f} um"
+                )
             print(f"  Data type: {dtype}")
             print(f"  Size: {dataset.nbytes / (1024 ** 2):.2f} MB")
 
@@ -142,7 +214,8 @@ def read_lif(filename: Path) -> BioImage:
 
 
 def safe_scenename(scene:str) -> str:
-    """.lif files taken using navigator functionality might containt slashes in their scenenames, which makes them annoying to save.
+    """.lif files taken using navigator functionality might containt slashes in their scenenames, 
+    which makes them annoying to save.
     
     This function returns a safe scenename that can be used for saving.
     
@@ -185,4 +258,45 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
             bioimg.save(path, select_scenes=[scene])
             logger.info(f"Converted image {i +1}/{len(bioimg.scenes)}: {safe_scene}.ome.tiff")
         except Exception as e:
-            logger.error(f"Unexpected error: {type(e).__name__}: {e} \n Could not save scene {safe_scene}.")
+            logger.error(f"Unexpected error: {type(e).__name__}: {e} \
+                         \n Could not save scene {safe_scene}.")
+
+
+def calculate_age(date1: str, date2: str) -> int:
+    """Calculate the age in days between two dates given as `yymmdd` strings.
+
+    Args:
+        date1 (str): Start date in `yymmdd` format (e.g. '251027').
+        date2 (str): Analysis date in `yymmdd` format.
+
+    Returns:
+        int: Number of days between `date1` and `date2`.
+
+    Raises:
+        ValueError: If the input strings are not in `yymmdd` format.
+    """
+    try:
+        fdate1 = datetime.strptime(date1, "%y%m%d").date()
+        fdate2 = datetime.strptime(date2, "%y%m%d").date()
+    except Exception as exc:
+        raise ValueError(f"Dates must be in 'yymmdd' format: {exc}") from exc
+
+    age = abs((fdate1 - fdate2).days)
+
+    return age
+
+
+def calculate_age_from_id(id: str) -> int:
+    parts = id.split('_')
+    date1 = parts[0]
+    date2 = parts[1]
+
+    return calculate_age(date1, date2)
+
+
+def save_df_to_csv(df: pd.DataFrame, output_path: Path) -> None:
+    df.to_csv(output_path)
+
+
+def headless_directory_setup():
+    pass

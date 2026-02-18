@@ -4,7 +4,14 @@
 # Testdata
 .data/
 test*.yaml
+_*
 
 # Cache files
 __pycache__/
 .env
+
+# Imagery
+*.ai
+
+# Documentation
+/site

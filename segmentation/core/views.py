@@ -2,6 +2,7 @@
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
+from shutil import move
 from tkinter import filedialog, messagebox
 
 import matplotlib.colors as mcolors
@@ -59,7 +60,12 @@ def create_random_colormap(num_labels: int) -> mcolors.ListedColormap:
     return mcolors.ListedColormap(colors)
 
 
-def cleaning_comparison_plot(dataset: np.ndarray, cleaned_dataset: np.ndarray, path: Path, save: bool=False) -> None:
+def cleaning_comparison_plot(
+        dataset: np.ndarray, 
+        cleaned_dataset: np.ndarray, 
+        path: Path, 
+        save_dir: Path | None=None
+        ) -> None:
     """Create comparison plots of original and cleaned datasets.
     
     Displays XY and YZ cross-sections of both the original and cleaned datasets
@@ -91,11 +97,11 @@ def cleaning_comparison_plot(dataset: np.ndarray, cleaned_dataset: np.ndarray, p
     axes[1, 1].imshow(cleaned_dataset[:, x, :], cmap=cmap)
     axes[1, 1].set_title('Cleaned YZ')
 
-    if save:
+    if save_dir is not None:
         import matplotlib as mpl
         mpl.use('agg') # Non-interactive backend for writing to files
 
-        save_path = path.parent / 'comparison_plots'
+        save_path = save_dir / 'comp'
         save_path.mkdir(exist_ok=True)
         plt.savefig(save_path / f'comparison_{path.stem}.png', dpi=300)
         plt.close()
@@ -120,25 +126,30 @@ class ImageReviewer(tk.Tk):
     def ui_elements(self):
         """Creates all widgets and binds events."""
 
-        # --- Canvas for image display ---
-        self.canvas = tk.Label(self, bg='lightgrey')
+        # Canvas for image display
+        self.canvas = tk.Label(self, text=
+                               "Open folder containing .pngs that need reviewing" \
+                               "\n Use buttons or <A> and <D> to save decision" \
+                               "\n Use <Left> and <Right> to navigate " \
+                               "\n Use CRTL + Z to undo (in MOVE mode)", 
+                               fg='grey', bg='lightgrey')
         self.canvas.pack(fill="both", expand=True, padx=5, pady=5)
 
-        # --- Controls frame ---
+        # Controls frame
         self.controls = tk.Frame(self)
         self.controls.pack(fill="x", padx=5, pady=5)
 
-        # --- Left: Open Folder button ---
+        # Left: Open Folder button
         self.open_button = tk.Button(
             self.controls, text="Open Folder", command=self.open_folder
         )
         self.open_button.grid(row=0, column=0, sticky="w", padx=5)
 
-        # --- Center: filename label ---
+        # Center: filename label
         self.filename_label = tk.Label(self.controls, text="", anchor="center")
         self.filename_label.grid(row=0, column=1, sticky="ew", padx=5)
 
-        # --- Right: Accept + Decline horizontal ---
+        # Right: Decision buttons
         right_frame = tk.Frame(self.controls)
         right_frame.grid(row=0, column=2, sticky="e", padx=5)
 
@@ -155,25 +166,29 @@ class ImageReviewer(tk.Tk):
         self.accept_button.pack(side="left", padx=(0,5))
         self.decline_button.pack(side="left")
 
-        # --- Configure column weights for flexible resizing ---
+        # Configure column weights for flexible resizing
         self.controls.columnconfigure(0, weight=1)  # left
         self.controls.columnconfigure(1, weight=2)  # center (filename label stretches)
         self.controls.columnconfigure(2, weight=1)  # right
 
-        # --- Progress label below controls ---
+        # Progress label below controls
         self.progress_label = tk.Label(self, text="No files loaded")
         self.progress_label.pack(pady=5)
 
-        # --- Key bindings ---
+        # Key bindings
         self.bind("<a>", lambda e: self.sort_file("accepted"))
         self.bind("<d>", lambda e: self.sort_file("declined"))
         self.bind("<A>", lambda e: self.sort_file("accepted"))
         self.bind("<D>", lambda e: self.sort_file("declined"))
+        self.bind("<Left>", lambda e: self.navigate(-1))
+        self.bind("<Right>", lambda e: self.navigate(1))
+        self.bind("<Control-z>", lambda e: self.undo_last_action())
+        self.bind("<Control-Z>", lambda e: self.undo_last_action())
 
 
     def state_variables(self):
         """Define empty state variables"""
-        self.folder = None
+        self.folder = Path.cwd()
         self.files = []
         self.all_files = []
         self.reviewed_files = []
@@ -182,14 +197,34 @@ class ImageReviewer(tk.Tk):
         self.frame_index = 0
         self.log_file = None
         self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
+        self.history = []
 
 
     def set_icon(self):
         parent_dir = Path(__file__).parents[2]
-        icon_path = parent_dir / "img" / "icon.png"
+        icon_path = parent_dir / "docs" / "img" / "icon.png"
 
         if icon_path.exists():
             self.iconphoto(False, tk.PhotoImage(file=icon_path))
+
+
+    def restore_h5_files_from_log(self):
+        # Move all h5 files from accepted/declined back to clean
+        for _, row in self.df.iterrows():
+            png_name = row["FileName"]
+            h5_name = png_name.replace('comparison_', "").replace('.png', '.h5')
+            for decision in ["accepted", "declined"]:
+                src = self.parent / 'h5' / decision / h5_name
+                dst = self.parent / 'h5' / 'clean' / h5_name
+                if src.exists():
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    try:
+                        move(str(src), str(dst))
+                    except Exception as e:
+                        messagebox.showwarning(
+                            "Restore error",
+                            f"Could not move {src} back to clean folder:\n{e}"
+                        )
 
 
     def open_folder(self):
@@ -257,6 +292,7 @@ class ImageReviewer(tk.Tk):
                     "Re-review all files? (Yes = all files, No = only new files)"
                 )
                 if resp:
+                    self.restore_h5_files_from_log()
                     # Reset log and review all files
                     self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
                     try:
@@ -274,9 +310,11 @@ class ImageReviewer(tk.Tk):
                 # No new files
                 resp = messagebox.askyesno(
                     "No new files",
-                    "All files in the folder are already reviewed.\nDo you want to re-review all files?"
+                    "All files in the folder are already reviewed.  \
+                    \nDo you want to re-review all files?"
                 )
                 if resp:
+                    self.restore_h5_files_from_log()
                     self.df = pd.DataFrame(columns=["FileName", "Decision", "Timestamp"])
                     try:
                         self.df.to_csv(self.log_file, index=False)
@@ -322,7 +360,7 @@ class ImageReviewer(tk.Tk):
             self.filename_label.config(text="")  # clear filename when done
             return
 
-        if not self.folder:
+        if self.folder == Path.cwd() or not self.folder.is_dir(): # I.e. no path selected
             messagebox.showerror("Error", "No folder selected")
             return
 
@@ -356,12 +394,18 @@ class ImageReviewer(tk.Tk):
 
     def sort_file(self, decision):
         """ Function to sort file based on user decision"""
+        # Move associated .h5 file
+        if not self.move_associated_h5(decision):
+            return
+
+        # If succes > add logging
         if self.log_file:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             fname = self.files[self.index].name
             # Update dataframe: if exists, replace; else append
             if not self.df.empty and fname in self.df["FileName"].values:
-                self.df.loc[self.df["FileName"] == fname, ["Decision", "Timestamp"]] = [decision, timestamp]
+                self.df.loc[self.df["FileName"] == fname, 
+                            ["Decision", "Timestamp"]] = [decision, timestamp]
             else:
                 new_row = {"FileName": fname, "Decision": decision, "Timestamp": timestamp}
                 self.df = pd.concat([self.df, pd.DataFrame([new_row])], ignore_index=True)
@@ -384,12 +428,119 @@ class ImageReviewer(tk.Tk):
             self.progress_label.config(text="Review complete")
             self.filename_label.config(text="")  # clear filename when finished
 
+    
+    def move_associated_h5(self, decision):
+        """Move associated h5 file. Returns True if success, False if failed."""
+        target_dir = self.parent / 'h5' / decision
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        png_name = self.files[self.index].name
+        h5_name = png_name.replace('comparison_', "").replace('.png', '.h5')
+
+        source_h5 = self.parent / 'h5' / 'clean' / h5_name
+        dest_h5 = target_dir / h5_name
+
+        # Validation checks
+        if not source_h5.exists():
+            messagebox.showerror(
+                "Missing H5 file",
+                f"Expected file not found:\n{source_h5}\n\n"
+                "Decision cancelled."
+            )
+            return False
+
+        if dest_h5.exists():
+            resp = messagebox.askyesno(
+                "File exists",
+                f"{dest_h5.name} already exists in target folder.\n"
+                "Overwrite?"
+            )
+            if not resp:
+                return False
+            dest_h5.unlink()
+
+        # Try moving
+        try:
+            move(str(source_h5), str(dest_h5))
+            self.history.append({
+            "filename": h5_name,
+            "decision": decision,
+            "source": str(dest_h5),     # where it was moved TO
+            "destination": str(source_h5)  # original location
+            })
+            return True
+
+        except PermissionError:
+            messagebox.showerror(
+                "Permission error",
+                f"Cannot move file:\n{source_h5}\n\n"
+                "The file may be open in another program."
+            )
+            return False
+
+        except Exception as e:
+            messagebox.showerror(
+                "Move failed",
+                f"Unexpected error while moving file:\n{source_h5}\n\n{e}"
+            )
+            return False
+
+    def undo_last_action(self):
+        """Undo the most recent decision."""
+        
+        if not self.history:
+            return
+
+        last_action = self.history.pop()
+
+        source = Path(last_action["source"])
+        destination = Path(last_action["destination"])
+        filename = last_action["filename"]
+
+        try:
+            # Move file back
+            if source.exists():
+                move(str(source), str(destination))
+
+            # Remove entry from dataframe
+            self.df = self.df[self.df["FileName"] != filename]
+
+            # Rewrite log file
+            if self.log_file:
+                self.df.to_csv(self.log_file, index=False)
+
+            # Move index back
+            self.index = max(0, self.index - 1)
+
+            # Show file again
+            self.show_file()
+
+        except Exception as e:
+            messagebox.showerror(
+                "Undo failed",
+                f"Could not undo action:\n{e}"
+            )
+
+    def navigate(self, step):
+        """Move through images without making decisions."""
+        if not self.files:
+            return  # No files loaded
+
+        new_index = self.index + step
+        # Clamp index within valid range
+        if new_index < 0 or new_index >= len(self.files):
+            return
+
+        self.index = new_index
+        self.show_file()
+
 
     def update_progress(self):
         """Update progress label"""
         total = len(self.files)
         current = self.index + 1
         self.progress_label.config(text=f"Item {current}/{total}")
+
 
     def run(self):
         self.mainloop()

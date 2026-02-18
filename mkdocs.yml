@@ -1,10 +1,11 @@
 site_name: CallusSegmentation
-site_dir: 'public/'
-docs_dir: 'docs'
+site_url: https://rfroeling.github.io/CallusSegmentation/
+
+repo_url: https://github.com/RFroeling/CallusSegmentation
 
 nav:
-  - Overview: index.md
-  - API Reference: API.md
+  - Home: index.md
+  - API overview: API.md
 
 theme:
   name: material
