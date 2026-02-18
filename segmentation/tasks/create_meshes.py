@@ -181,10 +181,6 @@ def labels_to_meshes(
     
     logger.info(f"Extracted {len(filtered_labels)} meshes from '{callus_id}'\n")
 
-    # if calculate_features:
-    #     features = pd.DataFrame(feature_rows)
-        # output_path = num_dir / f'{callus_id}_features.csv'
-        # save_df_to_csv(features, output_path)
     if calculate_features:
         features = pd.DataFrame(feature_rows)
         logger.debug(f'\n{features.head()}')
@@ -233,7 +229,7 @@ def main(input_path: Path, cleaned_key: str, headless: bool=True, min_size: int=
 
     # Global output
     base_dir = resolve_dirs(files[0], headless=headless) # Check base for first file
-    output_path = base_dir / "num" / f"features_{base_dir.name}.csv"
+    output_path = base_dir / "num" / "features.csv"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     first = True
