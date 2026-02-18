@@ -17,8 +17,8 @@ from segmentation.core.io import (
     calculate_age_from_id,
     load_h5,
     read_h5_voxel_size,
-    save_df_to_csv,
 )
+
 from segmentation.core.meshes import (
     compute_contacts_and_neighbors,
     compute_label_bboxes,
@@ -94,7 +94,7 @@ def labels_to_meshes(
     extract_cells: bool=True,
     extract_tissue: bool=True,
     calculate_features: bool=True,
-) -> None:
+    ) -> pd.DataFrame | None:
     """Extract and save surface meshes from a labeled volume.
 
     The function writes a tissue mesh file named ``tissue.ply`` (when
@@ -115,9 +115,9 @@ def labels_to_meshes(
             extract_features was set to `True`.
     """
     mesh_dir = base_dir / 'mesh' / callus_id
-    num_dir = base_dir / 'num'
+    # num_dir = base_dir / 'num'
     mesh_dir.mkdir(parents=True, exist_ok=True)
-    num_dir.mkdir(parents=True, exist_ok=True)
+    # num_dir.mkdir(parents=True, exist_ok=True)
 
     vtk_img = numpy_to_vtk_image(data, voxel_size)
     logger.info(f"Extracting meshes for callus '{callus_id}':\n")
@@ -181,24 +181,29 @@ def labels_to_meshes(
     
     logger.info(f"Extracted {len(filtered_labels)} meshes from '{callus_id}'\n")
 
+    # if calculate_features:
+    #     features = pd.DataFrame(feature_rows)
+        # output_path = num_dir / f'{callus_id}_features.csv'
+        # save_df_to_csv(features, output_path)
     if calculate_features:
         features = pd.DataFrame(feature_rows)
         logger.debug(f'\n{features.head()}')
+        return features
 
-        output_path = num_dir / f'{callus_id}_features.csv'
-        save_df_to_csv(features, output_path)
+    return None
 
 
 def h5_to_mesh(h5_path: Path, 
                cleaned_key: str, 
                base_dir: Path,
                min_size: int
-            ):
+    ) -> pd.DataFrame | None:
+
     data = load_h5(h5_path, cleaned_key)
     voxel_size = read_h5_voxel_size(h5_path, cleaned_key)
     callus_id = h5_path.stem
 
-    labels_to_meshes(
+    features = labels_to_meshes(
         data,
         voxel_size,
         callus_id,
@@ -208,46 +213,61 @@ def h5_to_mesh(h5_path: Path,
         extract_tissue=True,
         calculate_features=True,
     )
+    
+    return features
 
 
 def main(input_path: Path, cleaned_key: str, headless: bool=True, min_size: int=1000):
     """Convert .h5 datasets to meshes. Accepts file or directory."""
-
     if not input_path.exists():
         raise FileNotFoundError(input_path)
 
-    def process(file: Path):
-        if file.suffix.lower() != ".h5":
-            raise ValueError(f"{file} is not a .h5 dataset")
-
-        base_dir = resolve_dirs(file, headless=headless)
-
-        h5_to_mesh(
-            h5_path=file,
-            cleaned_key=cleaned_key,
-            base_dir=base_dir,
-            min_size=min_size
-        )
-
-    # ---- single file ----
+    # Determine files
     if input_path.is_file():
-        process(input_path)
-        return [input_path]
+        files = [input_path]
+    else:
+        files = list(input_path.glob("*.h5"))
+        if not files:
+            logger.warning(f"No .h5 files found in directory: {input_path}")
+            return []
 
-    # ---- directory ----
-    files = list(input_path.glob("*.h5"))
+    # Global output
+    base_dir = resolve_dirs(files[0], headless=headless) # Check base for first file
+    output_path = base_dir / "num" / f"features_{base_dir.name}.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if not files:
-        logger.warning(f"No .h5 files found in directory: {input_path}")
-        return []
-
+    first = True
     processed = []
 
     for file in files:
         try:
-            process(file)
+            if file.suffix.lower() != ".h5":
+                raise ValueError(f"{file} is not a .h5 dataset")
+
+            features = h5_to_mesh(
+                h5_path=file,
+                cleaned_key=cleaned_key,
+                base_dir=base_dir,
+                min_size=min_size
+            )
+
+            if features is not None and not features.empty:
+                features.to_csv(
+                    output_path,
+                    mode="w" if first else "a",
+                    header=first,
+                    index=False
+                )
+                first = False
+
             processed.append(file)
+
         except Exception:
             logger.exception(f"Failed processing {file}")
-
+    
+    if first:
+        logger.warning("No features were extracted from any dataset")
+    else:
+        logger.info(f"Combined feature table written to: {output_path}")
     return processed
+
