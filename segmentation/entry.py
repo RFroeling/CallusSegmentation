@@ -179,11 +179,10 @@ def run_create_meshes(input_path: Path, segmentation_key: str):
     main(input_path, segmentation_key)
 
 
-def run_headless_workflow(path):
-    # TODO
-    # Implement correct file handling; fixed relative paths in workflow, 
-    # CLI paths (and keys) for separate tasks
-    pass
+def run_headless_workflow(input_path):
+    from segmentation.tasks.headless import main
+
+    main(input_path)
 
 
 def main():
