@@ -2,8 +2,8 @@
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
-from tkinter import filedialog, messagebox
 from shutil import move
+from tkinter import filedialog, messagebox
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -64,7 +64,7 @@ def cleaning_comparison_plot(
         dataset: np.ndarray, 
         cleaned_dataset: np.ndarray, 
         path: Path, 
-        save: bool=False
+        save_dir: Path | None=None
         ) -> None:
     """Create comparison plots of original and cleaned datasets.
     
@@ -97,11 +97,11 @@ def cleaning_comparison_plot(
     axes[1, 1].imshow(cleaned_dataset[:, x, :], cmap=cmap)
     axes[1, 1].set_title('Cleaned YZ')
 
-    if save:
+    if save_dir is not None:
         import matplotlib as mpl
         mpl.use('agg') # Non-interactive backend for writing to files
 
-        save_path = path.parent / 'comparison_plots'
+        save_path = save_dir / 'comp'
         save_path.mkdir(exist_ok=True)
         plt.savefig(save_path / f'comparison_{path.stem}.png', dpi=300)
         plt.close()
@@ -528,9 +528,7 @@ class ImageReviewer(tk.Tk):
 
         new_index = self.index + step
         # Clamp index within valid range
-        if new_index < 0:
-            return
-        elif new_index >= len(self.files):
+        if new_index < 0 or new_index >= len(self.files):
             return
 
         self.index = new_index

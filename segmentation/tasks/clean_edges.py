@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 setup_logging()
 
 
-def resolve_h5_dirs(h5_dir: Path | str, move: bool) -> tuple[Path, Path]:
+def resolve_h5_dirs(h5_dir: Path | str, move: bool) -> tuple[Path, Path, Path]:
     h5_dir = Path(h5_dir)
 
     if not h5_dir.is_dir():
@@ -38,7 +38,7 @@ def resolve_h5_dirs(h5_dir: Path | str, move: bool) -> tuple[Path, Path]:
 
     # No movement → same directory
     if not move:
-        return h5_dir, h5_dir
+        return h5_dir, h5_dir, h5_dir
 
     # Determine base dataset directory
     if h5_dir.name == "raw":
@@ -49,16 +49,18 @@ def resolve_h5_dirs(h5_dir: Path | str, move: bool) -> tuple[Path, Path]:
         input_dir = base / "raw"
 
     output_dir = base / "clean"
+    img_dir = base.parent
 
     # Ensure structure exists
     input_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
+    img_dir.mkdir(parents=True, exist_ok=True)
 
     # Move files to input_dir
     for file in h5_dir.glob('*.h5'):
         move_h5(file, input_dir)
 
-    return input_dir, output_dir
+    return input_dir, output_dir, img_dir
 
 
 def post_cleanup(dataset: np.ndarray) -> np.ndarray:
@@ -123,7 +125,7 @@ def main(input_dir: Path, segmentation_key: str, move: bool):
     stores the cleaned segmentation under the key ``'cleaned'``. Errors are
     logged and collected in ``failed_files`` for reporting.
     """
-    input_dir, output_dir = resolve_h5_dirs(input_dir, move=move)
+    input_dir, output_dir, img_dir = resolve_h5_dirs(input_dir, move=move)
     
     failed_files = []
 
@@ -133,7 +135,7 @@ def main(input_dir: Path, segmentation_key: str, move: bool):
         try:
             logger.info(f"Processing {h5_file.name}...")
             segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, segmentation_key)
-            cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save=True)
+            cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save_dir=img_dir)
             voxel_size = read_h5_voxel_size(path=h5_file, key=segmentation_key)
             save_h5(h5_file, cleaned_segmentation, voxel_size=voxel_size, key='cleaned')
             if move:
