@@ -1,139 +1,123 @@
+
 # CallusSegmentation
 
 ![alt text](docs/img/logo.png)
 
- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Python toolkit for automated image segmentation of plant callus tissue from Leica LIF microscopy files. It is meant as a tool to automate processes around the [PlantSeg](https://github.com/kreshuklab/plant-seg) segmentation workflow, and specifically designed for the segmentation of callus tissue. 
+**CallusSegmentation** is a Python toolkit for automated image segmentation of plant callus tissue from Leica LIF microscopy files. It automates the [PlantSeg](https://github.com/kreshuklab/plant-seg) segmentation workflow, with a focus on callus tissue.
 
-This package provides tools for converting multi-scene LIF files to OME-TIFF format, cleaning segmented images, running PlantSeg workflows, and interactively reviewing results. Check the full [documentation](https://rfroeling.github.io/CallusSegmentation/).
+The toolkit provides:
 
-## Features
+- **LIF to OME-TIFF conversion**: Batch convert Leica LIF files (multi-scene) to OME-TIFF
+- **PlantSeg integration**: Run deep learning-based segmentation workflows (headless or interactive)
+- **Automated cleaning**: Remove edge artifacts and unwanted labels from segmentations
+- **3D mesh extraction**: Generate meshes and calculate features for segmented tissues/cells
+- **Interactive review**: GUI for reviewing and validating segmentation results
 
-- **LIF to OME-TIFF conversion**: Batch convert Leica LIF files with multiple scenes to standardized OME-TIFF format
-- **PlantSeg integration**: Run deep learning-based segmentation workflows using [PlantSeg](https://github.com/kreshuklab/plant-seg)
-- **Image cleaning**: Automated post-processing of segmented images with watershed segmentation and edge artifact removal
-- **Interactive image review**: GUI for reviewing and validating segmentation results
+See the full [documentation](https://rfroeling.github.io/CallusSegmentation/).
 
 ## Installation
 
-This project uses [uv](https://github.com/astral-sh/uv) for fast dependency management. If you don't have uv installed, install it first, then clone the repository and install the package:
+This project uses [uv](https://github.com/astral-sh/uv) for fast dependency management. If you don't have uv installed, install it first, then clone the repository and install dependencies:
 
 ```bash
-git clone git@github.com:RFroeling/CallusSegmentation.git
+git clone https://github.com/RFroeling/CallusSegmentation.git
 cd CallusSegmentation
 uv sync
 ```
 
-On Linux with GPU support, PyTorch will be installed with CUDA 12.6. On other platforms (macOS, Windows), CPU-only PyTorch is used.
+### PlantSeg dependencies
 
-## Configuration
+There seems to be an issue with accessing the PlantSeg dependencies through uv. A simple workaround is to make sure there's also a proper [PlantSeg installation](https://kreshuklab.github.io/plant-seg/latest/chapters/getting_started/installation/) available on your machine.
 
-Create a `.env` file in the project root to configure paths for different tasks:
-
-```env
-# For LIF to OME-TIFF conversion
-LIF_PATH="/path/to/lif/files"
-OME_TIFF_PATH="/path/to/output/ome-tiff"
-
-# For edge cleaning
-DATA_PATH="/path/to/h5/segmentation/results"
-KEY="H5_uncleaned_dataset_key"
-```
+> PlantSeg requires Pytorch; on Linux with GPU, CUDA 12.6 is used; otherwise, CPU-only PyTorch is installed.
 
 ## Usage
 
-The package provides a command-line interface with several subcommands:
+The toolkit provides a headless workflow and access to the individual tasks through a command-line interface with several subcommands.
 
-### Convert LIF files to OME-TIFF
+### Headless workflow
 
-```bash
-uv run run_segmentation.py --convert
-```
-
-Removes all LIF files in `LIF_PATH` (specified in `.env`) and saves their scenes as separate OME-TIFF files in `OME_TIFF_PATH`.
-
-### Run PlantSeg segmentation
+The toolkit is designed to run in a full headless mode, allowing (near) full-automatic analyis of callus images.
 
 ```bash
-uv run run_segmentation.py --plantseg path/to/config.yaml
+uv run run_segmentation.py headless --input <path/to/lif>
 ```
 
-Execute PlantSeg segmentation workflow using a configuration YAML file. See [PlantSeg documentation](https://github.com/kreshuklab/plant-seg/tree/2.0.0rc12) for configuration details.
+The provided path can either point to a single LIF file, or a directory containing multiple LIF files (these will all be processed). There should be PlantSeg [config YAML](https://kreshuklab.github.io/plant-seg/latest/chapters/workflow_gui/) present in the same directory as the LIF input file(s). The minimal output requirement for the config YAML is saving the label layer produces by PlantSeg with the key `segmentation` as a .h5.
 
-### Clean segmentation edges
+#### File Structure After Headless Workflow
+
+When running the full workflow in headless mode, the following directory structure is created (relative to your input directory):
+
+```text
+img/
+├── lif/           # Original LIF files (input)
+├── ometiff/       # OME-TIFF files (converted from LIF)
+├── h5/
+│   ├── raw/       # Raw PlantSeg segmentation outputs (.h5)
+│   └── clean/     # Cleaned segmentations (edge artifacts removed)
+├── mesh/          # 3D mesh files (PLY format)
+└── num/           # Extracted mesh features (CSV)
+```
+
+Typical output after running the headless workflow:
+
+- `img/lif/`: Input LIF files (moved/copied here)
+- `img/ometiff/`: OME-TIFF files for PlantSeg
+- `img/h5/raw/`: Raw PlantSeg segmentation results
+- `img/h5/clean/`: Cleaned segmentations (no edge artifacts)
+- `img/mesh/<sample_id>/`: 3D meshes for tissue and cells (PLY)
+- `img/num/features.csv`: Table of mesh features for all samples
+
+### Tasks
+
+It is also possible to run individual tasks:
 
 ```bash
-uv run run_segmentation.py --clean
+uv run run_segmentation.py <task>
 ```
 
-Post-process segmented images from `DATA_PATH` to remove edge artifacts using watershed segmentation and connected component analysis. Outputs cleaned H5 files and comparison visualizations.
+This works with any of these tasks:
 
-### Interactive Image Review
+- `convert`: Converts LIF files to OME-TIFF format. Input can be a file or directory.
+- `plantseg`: Runs PlantSeg segmentation workflow using a YAML configuration.
+- `clean`: Removes edge artifacts and unwanted labels from segmentations.
+- `meshing`: Extracts 3D meshes and features from cleaned segmentations.
+- `review`: Launches a GUI for reviewing segmentation results.
+- `inspect`: Prints structure and metadata of H5 segmentation files.
+
+For a more detailed description on runnings tasks, use the `-h` flag:
 
 ```bash
-uv run run_segmentation.py --review
+uv run run_segmentation.py <task> -h
 ```
-
-Launch an interactive GUI for reviewing segmentation results. Use this to validate automated results and identify any artifacts.
-
-### Create meshes
-
-```bash
-uv run run_segmentation.py --meshing
-```
-
-Create 3D meshes from segmented and cleaned image files. Automatically saves mesh features.
-
-### Inspect H5 Files
-
-```bash
-uv run run_segmentation.py --inspect
-```
-
-Print the structure and metadata of H5 segmentation files to the console for debugging and verification.
 
 ## Project Structure
 
-```bash
+```text
 CallusSegmentation/
-├── segmentation/                     # Main package
-│   ├── entry.py                      # CLI entry point
-│   ├── core/                         # Core utilities
-│   │   ├── cleaning.py               # Image cleaning functions
-│   │   ├── io.py                     # File I/O operations
-│   │   ├── logger.py                 # Logging configuration
-│   │   ├── meshes.py                 # Mesh operations
-│   │   └── views.py                  # Visualization tools
-│   └── tasks/                        # Individual workflow tasks
-│       ├── clean_edges.py            # Edge cleaning workflow
-│       ├── convert_lif.py            # LIF to OME-TIFF conversion
-│       ├── create_meshes.py          # Mesh creation from segmented files
-│       ├── inspect_h5.py             # H5 file inspection
-│       ├── move_files.py             # File management utilities
-│       ├── review.py                 # Image review interface
-│       └── run_plantseg_workflow.py  # PlantSeg integration
-├── docs/                             # Documentation
-├── run_segmentation.py               # Quick-start entry point
-└── pyproject.toml                    # Project configuration & dependencies
+├── segmentation/           # Main package
+│   ├── entry.py            # CLI entry point
+│   ├── core/               # Core utilities (I/O, cleaning, meshes, etc.)
+│   └── tasks/              # Workflow tasks (convert, clean, mesh, etc.)
+├── run_segmentation.py     # Main script for CLI
+├── docs/                   # Documentation
+├── pyproject.toml          # Project config & dependencies
+└── ...
 ```
 
 ## Dependencies
 
 - **plantseg** (2.0.0rc12): Deep learning segmentation
 - **VTK**: Meshing
-- **bioio**: General image I/O support
-- **bioio-lif** & **bioio-ome-tiff**: Format-specific readers/writers
+- **bioio**, **bioio-lif**, **bioio-ome-tiff**: Image I/O
 - **h5py**: HDF5 file handling
-- **scikit-image**: Image processing algorithms
-- **torch** & **torchvision**: Deep learning framework
+- **scikit-image**: Image processing
+- **torch**, **torchvision**: Deep learning
 - **numpy**, **scipy**, **pandas**: Scientific computing
 - **matplotlib**: Visualization
-
-## Requirements
-
-- Python ≥ 3.13
-- macOS, Linux, or Windows
 
 ## License
 
