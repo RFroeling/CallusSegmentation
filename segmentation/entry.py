@@ -108,11 +108,11 @@ def create_parser():
         help="Path to .LIF or directory containing .LIF(s)",
     )
     headless_parser.add_argument(
-        "path",
+        "--input",
         type=Path,
         help="Path to LIF file or directory",
     )
-    headless_parser.set_defaults(func=lambda args: run_headless_workflow(args.path))
+    headless_parser.set_defaults(func=lambda args: run_headless(args.input))
     
     return parser.parse_args()
 
@@ -179,7 +179,7 @@ def run_create_meshes(input_path: Path, segmentation_key: str):
     main(input_path, segmentation_key)
 
 
-def run_headless_workflow(input_path):
+def run_headless(input_path):
     from segmentation.tasks.headless import main
 
     main(input_path)
