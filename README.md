@@ -52,14 +52,22 @@ The provided path can either point to a single LIF file, or a directory containi
 When running the full workflow in headless mode, the following directory structure is created (relative to your input directory):
 
 ```text
-img/
-├── lif/           # Original LIF files (input)
-├── ometiff/       # OME-TIFF files (converted from LIF)
-├── h5/
-│   ├── raw/       # Raw PlantSeg segmentation outputs (.h5)
-│   └── clean/     # Cleaned segmentations (edge artifacts removed)
-├── mesh/          # 3D mesh files (PLY format)
-└── num/           # Extracted mesh features (CSV)
+data_dir
+├── num/                
+│   └── all_features.csv    # Extracted mesh features (CSV)
+├── mesh/               
+│   ├── <callus_id_1>/      # 3D mesh files (PLY format)
+│   ├── <callus_id_2>/
+│   └── ...
+└── img/
+    ├── lif/                # Original LIF files (input)
+    ├── ometiff/            # OME-TIFF files (converted from LIF)
+    ├── comp/               # Plots for reviewing cleaning quality
+    └── h5/
+        ├── raw/            # Raw PlantSeg segmentation outputs (.h5)
+        ├── clean/          # Cleaned segmentations (edge artifacts removed)
+        ├── accepted/       # Reviewed, accepted, cleaned segmentations
+        └── declined/       # Reviewed, declined, cleaned segmentations        
 ```
 
 Typical output after running the headless workflow:
