@@ -229,7 +229,7 @@ def main(input_path: Path, cleaned_key: str, headless: bool=True, min_size: int=
 
     # Global output
     base_dir = resolve_dirs(files[0], headless=headless) # Check base for first file
-    output_path = base_dir / "num" / "features.csv"
+    output_path = base_dir / "num" / "meshdata.csv"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     first = True
