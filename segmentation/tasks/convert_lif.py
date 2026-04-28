@@ -8,8 +8,6 @@ from segmentation.core.logger import setup_logging
 
 # Configure logger
 logger = logging.getLogger(__name__)
-setup_logging()
-
 
 def convert(file, output_dir):
     """Convert a single .lif file into OME-TIFF scenes.

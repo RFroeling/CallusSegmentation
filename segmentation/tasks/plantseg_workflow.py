@@ -8,13 +8,12 @@ Example:
     main(Path("workflow.yml"))
 """
 
-from plantseg.headless.headless import run_headless_workflow
-
-
 def main(yaml_path):
     """Execute the PlantSeg headless workflow defined in `yaml_path`.
 
     Args:
         yaml_path (str or pathlib.Path): Path to the PlantSeg YAML configuration.
     """
+    from plantseg.headless.headless import run_headless_workflow
+    
     run_headless_workflow(yaml_path)

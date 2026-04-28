@@ -5,6 +5,7 @@ from datetime import datetime
 from os.path import getsize
 from pathlib import Path
 from shutil import move
+import re
 
 import bioio_lif
 import h5py
@@ -213,29 +214,97 @@ def read_lif(filename: Path) -> BioImage:
     return BioImage(filename, reader=bioio_lif.Reader)
 
 
-def safe_scenename(scene:str) -> str:
+def split_scenename(scene:str) -> tuple[str, str | None]:
     """.lif files taken using navigator functionality might containt slashes in their scenenames, 
     which makes them annoying to save.
     
-    This function returns a safe scenename that can be used for saving.
+    This function removes slashes from scenenames and returns the condition (= name of the tilescan)
+    and the actual scene name itself (usually 'P x' if taken with the navigator).
+
+    Returns 'None' for condition if scenenames don't contain slashes.
     
     Args:
         scene (str): Scenename
         
     Returns:
-        str: Safe scenename
+        Tuple[str, str | None]: Tuple containing the scenename and condition name (None for scenenames not containing slashes).
     """
     if '/' in scene:
         safe_scene = scene.split('/')[-1]
+        condition = scene.split('/')[-2]
     elif '\\' in scene:
         safe_scene = scene.split('\\')[-1]
+        condition = scene.split('\\')[-2]
     else:
         safe_scene = scene
+        condition = None
 
-    return safe_scene
+    return (safe_scene, condition)
 
 
-def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
+def rename_scene_by_condition(scenes_data: list[tuple[str, str | None]]) -> list[str]:
+    """Generate properly formatted scene names with condition-specific indexing.
+    
+    If scenenames follow the pattern 'P <number>' (with optional content in brackets),
+    uses the P-number directly as the index. Otherwise, uses a condition-specific counter 
+    that resets for each condition.
+
+    Conditions are extracted from the tilescan filename in .lif file. If images were
+    taking without using tilescanning/navigator, scene-names remain unchanged.
+    
+    Args:
+        scenes_data (list[tuple[str, str | None]]): List of (scenename, condition) 
+            tuples as returned by safe_scenename().
+    
+    Returns:
+        list[str]: List of renamed scenes with format "condition_00x" where x is either 
+            the P-number or a condition-specific counter.
+        
+    Example:
+        scenes_data = [
+            ("P 1", "A"),
+            ("P 2", "A"),
+            ("P 1 (2)", "B"),
+            ("P 2 (2)", "B"),
+            ("other_name", "C"),
+        ]
+        result = generate_renamed_scenes(scenes_data)
+        
+        ### ["A_001", "A_002", "B_001", "B_002", "C_001"]
+    """
+    condition_counters = {}
+    renamed_scenes = []
+    
+    # Regex to match 'P <number>' pattern (ignores content in brackets)
+    p_pattern = re.compile(r'^P\s+(\d+)')
+    
+    for scenename, condition in scenes_data:
+        # Try to extract P-number from scenename
+        match = p_pattern.match(scenename)
+        
+        if match:
+            index = int(match.group(1))
+        else:
+            # Fallback to condition-specific counter
+            if condition not in condition_counters:
+                condition_counters[condition] = 0
+            condition_counters[condition] += 1
+            index = condition_counters[condition]
+        
+        # Format the new name
+        if condition and condition not in scenename:  # Only rename if condition is not None and not already part of the scenename
+            new_name = f"{condition}_{index:03d}"
+            logging.debug(f"Renaming scene '{scenename}' to '{new_name}'")
+        else:
+            logging.debug(f'Condition: {condition}, \n Scene: {scenename} \n Not renaming...')
+            new_name = scenename
+        
+        renamed_scenes.append(new_name)
+    
+    return renamed_scenes
+
+
+def save_scenes_as_tiff(bioimg: BioImage, output_dir: Path) -> None:
     """Iterates over all scenes in a BioImage object and saves each of them as ome.tiff
     while preserving physical pixel dimensions.
 
@@ -251,15 +320,21 @@ def save_scenes_as_ome_tiff(bioimg: BioImage, output_dir: Path) -> None:
 
     logger.info(f'Found {len(bioimg.scenes)} scenes in BioImage: \n')
 
-    for i, scene in enumerate(bioimg.scenes):
-        safe_scene = safe_scenename(scene)
-        path = output_dir / f'{safe_scene}.ome.tiff'
+    # Collect all scenes data first
+    scenes_data = [(split_scenename(scene)[0], split_scenename(scene)[1]) 
+               for scene in bioimg.scenes]
+
+    # Get list of correct scene names
+    renamed_scenes = rename_scene_by_condition(scenes_data)
+
+    # Save using renamed scenename
+    for i, (scene, new_name) in enumerate(zip(bioimg.scenes, renamed_scenes)):
+        path = output_dir / f'{new_name}.tiff'
         try:
             bioimg.save(path, select_scenes=[scene])
-            logger.info(f"Converted image {i +1}/{len(bioimg.scenes)}: {safe_scene}.ome.tiff")
+            logger.info(f"Converted image {i + 1}/{len(bioimg.scenes)}: {new_name}.tiff")
         except Exception as e:
-            logger.error(f"Unexpected error: {type(e).__name__}: {e} \
-                         \n Could not save scene {safe_scene}.")
+            logger.error(f"Unexpected error: {type(e).__name__}: {e}")
 
 
 def calculate_age(date1: str, date2: str) -> int:

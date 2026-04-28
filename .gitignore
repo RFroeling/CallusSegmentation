@@ -5,6 +5,7 @@
 .data/
 test*.yaml
 _*
+.*
 
 # Cache files
 __pycache__/

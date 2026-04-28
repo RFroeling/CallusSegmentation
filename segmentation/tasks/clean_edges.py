@@ -27,8 +27,6 @@ from segmentation.core.views import cleaning_comparison_plot
 
 # Configure logging
 logger = logging.getLogger(__name__)
-setup_logging()
-
 
 def resolve_h5_dirs(h5_dir: Path | str, move: bool) -> tuple[Path, Path, Path]:
     h5_dir = Path(h5_dir)
