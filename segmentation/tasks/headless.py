@@ -5,7 +5,9 @@ import yaml
 
 from segmentation.tasks import (
     convert_lif,
-    plantseg_workflow)
+    plantseg_workflow,
+    clean_edges,
+    )
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -143,6 +145,7 @@ def main(user_path: str | Path):
 
     logger.debug(f'Base dir: {base_dir}')
     logger.info(f'Found YAML: {yaml_path.name}')
+    logger.info(f'Found {len(files)} .lif files: {[file.name for file in files]}')
 
     # Convert LIFs to OME-TIFF
     for file in files:
@@ -151,9 +154,13 @@ def main(user_path: str | Path):
     # Run PlantSeg headless on OME-TIFFs
     plantseg_workflow.main(yaml_path)
 
-    
+    # Clean PlantSeg output
+    clean_edges.main(input_dir=base_dir / 'img' / 'h5' / 'raw', 
+                     segmentation_key='segmentation', 
+                     move=True
+                     )
 
-
+ 
 if __name__ == "__main__":
     user_path = Path('.testflow/img/lif/250925_LowResSegmentation.lif')
     main(user_path)
