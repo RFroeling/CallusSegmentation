@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 
-from segmentation.core.io import read_lif, save_scenes_as_ome_tiff
+from segmentation.core.io import read_lif, save_scenes_as_tiff
 from segmentation.core.logger import setup_logging
 
 # Configure logger
@@ -18,7 +18,7 @@ def convert(file, output_dir):
     """
     logger.info(f'Converting the contents of {file.name}:')
     bioimg = read_lif(file)
-    save_scenes_as_ome_tiff(bioimg, output_dir)
+    save_scenes_as_tiff(bioimg, output_dir)
     logging.info(f'Done with {file.name}! \n')
 
 
