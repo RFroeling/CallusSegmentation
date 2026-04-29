@@ -4,12 +4,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**CallusSegmentation** is a Python toolkit for automated image segmentation of plant callus tissue from Leica LIF microscopy files. It automates the [PlantSeg](https://github.com/kreshuklab/plant-seg) segmentation workflow, with a focus on callus tissue.
+**CallusSegmentation** is a Python toolkit for automated image segmentation of plant callus tissue from Leica LIF microscopy files. It automates the [PanSeg](https://github.com/kreshuklab/panseg) segmentation workflow, with a focus on callus tissue.
 
 The toolkit provides:
 
 - **LIF to OME-TIFF conversion**: Batch convert Leica LIF files (multi-scene) to OME-TIFF
-- **PlantSeg integration**: Run deep learning-based segmentation workflows (headless or interactive)
+- **PanSeg integration**: Run deep learning-based segmentation workflows (headless or interactive)
 - **Automated cleaning**: Remove edge artifacts and unwanted labels from segmentations
 - **3D mesh extraction**: Generate meshes and calculate features for segmented tissues/cells
 - **Interactive review**: GUI for reviewing and validating segmentation results
@@ -26,11 +26,11 @@ cd CallusSegmentation
 uv sync
 ```
 
-### PlantSeg dependencies
+### PanSeg dependencies
 
-There seems to be an issue with accessing the PlantSeg dependencies through uv. A simple workaround is to make sure there's also a proper [PlantSeg installation](https://kreshuklab.github.io/plant-seg/latest/chapters/getting_started/installation/) available on your machine.
+There seems to be an issue with accessing the PanSeg dependencies through uv. A simple workaround is to make sure there's also a proper [PanSeg installation](https://kreshuklab.github.io/panseg/latest/chapters/getting_started/installation/) available on your machine.
 
-> PlantSeg requires Pytorch; on Linux with GPU, CUDA 12.6 is used; otherwise, CPU-only PyTorch is installed.
+> PanSeg requires Pytorch; on Linux with GPU, CUDA 12.6 is used; otherwise, CPU-only PyTorch is installed.
 
 ## Usage
 
@@ -44,7 +44,7 @@ The toolkit is designed to run in a full headless mode, allowing (near) full-aut
 uv run run_segmentation.py headless --input <path/to/lif>
 ```
 
-The provided path can either point to a single LIF file, or a directory containing multiple LIF files (these will all be processed). There should be PlantSeg [config YAML](https://kreshuklab.github.io/plant-seg/latest/chapters/workflow_gui/) present in the same directory as the LIF input file(s). The minimal output requirement for the config YAML is saving the label layer produces by PlantSeg with the key `segmentation` as a .h5.
+The provided path can either point to a single LIF file, or a directory containing multiple LIF files (these will all be processed). There should be PanSeg [config YAML](https://kreshuklab.github.io/panseg/latest/chapters/workflow_gui/) present in the same directory as the LIF input file(s). The minimal output requirement for the config YAML is saving the label layer produces by PanSeg with the key `segmentation` as a .h5.
 
 #### File Structure After Headless Workflow
 
@@ -63,7 +63,7 @@ data_dir
     ├── ometiff/            # OME-TIFF files (converted from LIF)
     ├── comp/               # Plots for reviewing cleaning quality
     └── h5/
-        ├── raw/            # Raw PlantSeg segmentation outputs (.h5)
+        ├── raw/            # Raw PanSeg segmentation outputs (.h5)
         ├── clean/          # Cleaned segmentations (edge artifacts removed)
         ├── accepted/       # Reviewed, accepted, cleaned segmentations
         └── declined/       # Reviewed, declined, cleaned segmentations        
@@ -72,8 +72,8 @@ data_dir
 Typical output after running the headless workflow:
 
 - `img/lif/`: Input LIF files (moved/copied here)
-- `img/ometiff/`: OME-TIFF files for PlantSeg
-- `img/h5/raw/`: Raw PlantSeg segmentation results
+- `img/ometiff/`: OME-TIFF files for PanSeg
+- `img/h5/raw/`: Raw PanSeg segmentation results
 - `img/h5/clean/`: Cleaned segmentations (no edge artifacts)
 - `img/mesh/<sample_id>/`: 3D meshes for tissue and cells (PLY)
 - `img/num/features.csv`: Table of mesh features for all samples
@@ -89,7 +89,7 @@ uv run run_segmentation.py <task>
 This works with any of these tasks:
 
 - `convert`: Converts LIF files to OME-TIFF format. Input can be a file or directory.
-- `plantseg`: Runs PlantSeg segmentation workflow using a YAML configuration.
+- `panseg`: Runs PanSeg segmentation workflow using a YAML configuration.
 - `clean`: Removes edge artifacts and unwanted labels from segmentations.
 - `meshing`: Extracts 3D meshes and features from cleaned segmentations.
 - `review`: Launches a GUI for reviewing segmentation results.
@@ -117,7 +117,7 @@ CallusSegmentation/
 
 ## Dependencies
 
-- **plantseg** (2.0.0rc12): Deep learning segmentation
+- **panseg** (2.0.0rc12): Deep learning segmentation
 - **VTK**: Meshing
 - **bioio**, **bioio-lif**, **bioio-ome-tiff**: Image I/O
 - **h5py**: HDF5 file handling

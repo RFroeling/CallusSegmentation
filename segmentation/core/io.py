@@ -310,7 +310,7 @@ def save_scenes_as_tiff(bioimg: BioImage, output_dir: Path) -> None:
 
     Supports 5D (TCZYX) images, but provides no option to produce subsets. That means that
     dimensonality in == dimensionality out. When single timepoint and single channel images
-    are required, such as for PlantSeg analysis, they should also be provided as such.
+    are required, such as for PanSeg analysis, they should also be provided as such.
 
     Args:
         bioimg (BioImage): BioImage object (image) containing at least 1 scene.

@@ -5,7 +5,7 @@ import yaml
 
 from segmentation.tasks import (
     convert_lif,
-    plantseg_workflow,
+    panseg_workflow,
     clean_edges,
     )
 
@@ -31,10 +31,10 @@ def configure_yaml(
     export_dir: Path | str,
 ):
     """
-    Update PlantSeg YAML so all export_directory* fields point to one folder.
+    Update PanSeg YAML so all export_directory* fields point to one folder.
 
     Args:
-        yaml_path (Path | str): Path to the PlantSeg YAML config file
+        yaml_path (Path | str): Path to the PanSeg YAML config file
         input_path (Path | str): Path to input images (file or directory)
         export_directory (Path | str): Single output directory used for ALL exports
     """
@@ -47,7 +47,7 @@ def configure_yaml(
         config = yaml.safe_load(f)
 
     if "inputs" not in config or not config["inputs"]:
-        raise ValueError("Invalid PlantSeg YAML: missing 'inputs' section")
+        raise ValueError("Invalid PanSeg YAML: missing 'inputs' section")
 
     input_block = config["inputs"][0]
 
@@ -136,7 +136,7 @@ def main(user_path: str | Path):
     # Setup correct file structure
     base_dir, files = headless_path_setup(user_path)
     
-    # Configure PlantSeg YAML
+    # Configure PanSeg YAML
     yaml_path = find_yaml(base_dir)
     configure_yaml(yaml_path, 
                    input_dir=base_dir / 'img' / 'ometiff', 
@@ -151,10 +151,10 @@ def main(user_path: str | Path):
     for file in files:
         convert_lif.main(file)
 
-    # Run PlantSeg headless on OME-TIFFs
-    plantseg_workflow.main(yaml_path)
+    # Run PanSeg headless on OME-TIFFs
+    panseg_workflow.main(yaml_path)
 
-    # Clean PlantSeg output
+    # Clean PanSeg output
     clean_edges.main(input_dir=base_dir / 'img' / 'h5' / 'raw', 
                      segmentation_key='segmentation', 
                      move=True

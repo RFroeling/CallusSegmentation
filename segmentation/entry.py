@@ -2,7 +2,7 @@
 
 This module provides a small CLI used to call the different tools in the
 `segmentation` package (reviewer GUI, cleaning routines, file conversion,
-inspection helpers and PlantSeg workflows).
+inspection helpers and PanSeg workflows).
 
 The module exposes a `main()` function intended to be used as a console
 entry point.
@@ -69,18 +69,18 @@ def create_parser():
     )
     inspect_parser.set_defaults(func=lambda args: run_inspect_h5())
 
-    # ---------------- PlantSeg ----------------
-    plantseg_parser = subparsers.add_parser(
-        "plantseg",
-        help="Run PlantSeg workflow from YAML config file",
+    # ---------------- PanSeg ----------------
+    panseg_parser = subparsers.add_parser(
+        "panseg",
+        help="Run PanSeg workflow from YAML config file",
     )
-    plantseg_parser.add_argument(
+    panseg_parser.add_argument(
         "config",
         type=Path,
         help="Path to YAML config file",
     )
-    plantseg_parser.set_defaults(
-        func=lambda args: run_plantseg_workflow(args.config)
+    panseg_parser.set_defaults(
+        func=lambda args: run_panseg_workflow(args.config)
     )
 
     # ---------------- Meshing ----------------
@@ -157,13 +157,13 @@ def run_inspect_h5():
 
     main()
 
-def run_plantseg_workflow(yaml_path: Path):
-    """Execute a PlantSeg headless workflow from a YAML config file.
+def run_panseg_workflow(yaml_path: Path):
+    """Execute a PanSeg headless workflow from a YAML config file.
 
     Args:
-        yaml_path (Path): Path to the PlantSeg YAML configuration file.
+        yaml_path (Path): Path to the PanSeg YAML configuration file.
     """
-    from segmentation.tasks.plantseg_workflow import main
+    from segmentation.tasks.panseg_workflow import main
 
     main(yaml_path)
 
