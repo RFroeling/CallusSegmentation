@@ -3,9 +3,8 @@ name = "callussegmentation"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
-    "panseg@git+https://github.com/kreshuklab/panseg.git@2.0.0",
     "bioio>=3.2.0",
     "bioio-lif>=1.4.2",
     "bioio-ome-tiff>=1.4.0",
@@ -15,30 +14,8 @@ dependencies = [
     "pandas>=3.0.0",
     "scikit-image>=0.26.0",
     "scipy>=1.17.0",
-    "torch>=2.10.0",
-    "torchvision>=0.25.0",
     "vtk>=9.5.2",
 ]
-
-[tool.uv.sources]
-torch = [
-  { index = "pytorch-cpu", marker = "sys_platform != 'linux'" },
-  { index = "pytorch-cu126", marker = "sys_platform == 'linux'" },
-]
-torchvision = [
-  { index = "pytorch-cpu", marker = "sys_platform != 'linux'" },
-  { index = "pytorch-cu126", marker = "sys_platform == 'linux'" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cu126"
-url = "https://download.pytorch.org/whl/cu126"
-explicit = true
 
 [tool.ruff]
 line-length = 100
