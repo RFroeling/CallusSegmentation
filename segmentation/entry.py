@@ -132,7 +132,6 @@ def create_parser():
 
 # ---------------- Launchers ----------------
 
-
 def launch_reviewer():
     """Start the reviewer GUI for manual image review.
 
@@ -198,11 +197,22 @@ def run_create_meshes(input_path: Path, segmentation_key: str):
 
 
 def run_headless(input_path, panseg_path: str | Path | None = None):
+    """Runs the headless workflow, consisting off:
+
+        - .lif to .tiff file extraction and conversion.
+        - PanSeg segmentation.
+        - Cleaning segmenation results.
+
+    Args:
+        input_path (Path): Directory containing .h5 files.
+        panseg_path (str | Path | None): Path to local PanSeg executable. Defaults to None.
+    """
     from segmentation.tasks.headless import main
 
     main(input_path, panseg_path)
 
 
+# ---------------- Execution ----------------
 def main():
     """Main function to parse arguments and call corresponding functionality."""
     setup_logging()
