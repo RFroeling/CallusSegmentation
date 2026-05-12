@@ -5,8 +5,6 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 import numpy as np
 from scipy import ndimage
 from vtkmodules.util.data_model import PolyData
@@ -18,6 +16,7 @@ from vtkmodules.vtkFiltersGeneral import vtkDiscreteMarchingCubes
 from vtkmodules.vtkIOGeometry import vtkSTLWriter
 from vtkmodules.vtkIOPLY import vtkPLYWriter
 
+logger = logging.getLogger(__name__)
 
 def numpy_to_vtk_image(data: np.ndarray, voxel_size: Sequence[float]) -> vtkImageData:
     """Builds an instance of vtkImageData from a numpy array with given voxel size.

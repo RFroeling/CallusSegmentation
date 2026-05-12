@@ -32,8 +32,9 @@ def apply_watershed_segmentation(binary: np.ndarray, min_distance: int=4) -> np.
     Performs a distance transformation on the binary mask, then identifies local maxima
     using a minumum distance parameter to generate seeds for the watershed algorithm.
 
-    Adjust the min_distance parameter to control sensitivity in seed detection; a larger value results in 
-    fewer seeds and potentially undersegmenatation, while a smaller value may lead to oversegmentation.
+    Adjust the min_distance parameter to control sensitivity in seed detection; 
+    a larger value results in fewer seeds and potentially undersegmenatation, 
+    while a smaller value may lead to oversegmentation.
 
     Args:
         binary (np.ndarray): Binary mask of the tissue volume.
@@ -62,7 +63,11 @@ def apply_watershed_segmentation(binary: np.ndarray, min_distance: int=4) -> np.
     return tissue_labels
 
 
-def calculate_border_touch_fraction(binary: np.ndarray, tissues: np.ndarray, props: pd.DataFrame) -> np.ndarray:
+def calculate_border_touch_fraction(
+        binary: np.ndarray, 
+        tissues: np.ndarray, 
+        props: pd.DataFrame
+    ) -> np.ndarray:
     """Calculate the fraction of each tissue that touches the volume boundary.
     
     For each tissue region, computes what proportion of its voxels are located
@@ -213,7 +218,8 @@ def apply_mask(labels: np.ndarray, mask: np.ndarray) -> np.ndarray:
     in the mask is False, effectively removing unwanted tissues.
 
     Args:
-        labels (np.ndarray): Segmentatation output, NumPy array where each cell has a unique integer label.
+        labels (np.ndarray): Segmentatation output, NumPy array where each cell has a unique \
+        integer label.
         mask (np.ndarray): Binary mask where voxels to keep are True.
 
     Returns:
@@ -250,13 +256,18 @@ def get_edge_labels(dataset: np.ndarray) -> set[int]:
     return edge_labels
 
 
-def get_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int], strictness: float=2) -> set[int]:
+def get_edge_label_neighbors(
+        dataset: np.ndarray, 
+        edge_labels: set[int], 
+        strictness: float=2
+    ) -> set[int]:
     """Identify neighbor labels that should be removed based on surface contact.
     
     Collects all labels touching edge-bordering cells and evaluates whether they should
     be removed based on their surface contact patterns:
     - If a neighbor touches only edge-bordering labels, mark for removal
-    - If a neighbor touches both edge and non-edge labels, compare surface areas using strictness parameter:
+    - If a neighbor touches both edge and non-edge labels, compare surface areas using \
+        strictness parameter:
       - Remove if: surface_touching_edge > strictness * surface_touching_other
       - Keep otherwise
     
@@ -264,7 +275,8 @@ def get_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int], strictn
         dataset (np.ndarray): Labeled image where each tissue has a unique integer label.
         edge_labels (set[int]): Set of labels touching the volume boundaries.
         strictness (float): Multiplier for removal threshold. Higher values are more conservative 
-            (fewer labels removed). For example: strictness=1.0 removes if edge contact > other contact,
+            (fewer labels removed). For example: strictness=1.0 removes if \
+                edge contact > other contact,
             strictness=2.0 removes only if edge contact is more than twice the other contact.
             Defaults to 2.0 (more conservative).
     
@@ -305,7 +317,11 @@ def get_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int], strictn
     return labels_to_remove
 
 
-def get_recursive_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int], strictness: float=2) -> set[int]:
+def get_recursive_edge_label_neighbors(
+        dataset: np.ndarray, 
+        edge_labels: set[int], 
+        strictness: float=2
+    ) -> set[int]:
     """Recursively identify labels to remove based on proximity to edge labels.
     
     Iteratively applies get_edge_label_neighbors, expanding the set of labels to remove
@@ -319,7 +335,8 @@ def get_recursive_edge_label_neighbors(dataset: np.ndarray, edge_labels: set[int
             Defaults to 2.0.
     
     Returns:
-        set[int]: Set of all labels that should be removed (includes edge labels and their neighbors).
+        set[int]: Set of all labels that should be removed \
+            (includes edge labels and their neighbors).
     """
     labels_to_remove = edge_labels.copy()
 

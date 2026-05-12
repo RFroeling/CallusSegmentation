@@ -18,7 +18,6 @@ from segmentation.core.io import (
     load_h5,
     read_h5_voxel_size,
 )
-
 from segmentation.core.meshes import (
     compute_contacts_and_neighbors,
     compute_label_bboxes,
@@ -126,7 +125,9 @@ def labels_to_meshes(
     filtered_labels = filter_unique_labels(data, min_size=min_size)
 
     age = calculate_age_from_id(callus_id)
-    contact_pairs, background_contact, neighbor_count = compute_contacts_and_neighbors(data, filtered_labels, voxel_size)
+    contact_pairs, background_contact, neighbor_count = compute_contacts_and_neighbors(data, 
+                                                                                       filtered_labels, 
+                                                                                       voxel_size)
 
     feature_rows = []
 

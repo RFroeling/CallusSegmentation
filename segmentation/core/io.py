@@ -1,11 +1,11 @@
 """Module that provides functionality to deal with .h5 datasets."""
 import logging
+import re
 from collections.abc import Sequence
 from datetime import datetime
 from os.path import getsize
 from pathlib import Path
 from shutil import move
-import re
 
 import bioio_lif
 import h5py
@@ -227,7 +227,8 @@ def split_scenename(scene:str) -> tuple[str, str | None]:
         scene (str): Scenename
         
     Returns:
-        Tuple[str, str | None]: Tuple containing the scenename and condition name (None for scenenames not containing slashes).
+        Tuple[str, str | None]: Tuple containing the scenename and condition name \
+            (None for scenenames not containing slashes).
     """
     if '/' in scene:
         safe_scene = scene.split('/')[-1]
@@ -292,7 +293,8 @@ def rename_scene_by_condition(scenes_data: list[tuple[str, str | None]]) -> list
             index = condition_counters[condition]
         
         # Format the new name
-        if condition and condition not in scenename:  # Only rename if condition is not None and not already part of the scenename
+        # Only rename if condition is not None and not already part of the scenename
+        if condition and condition not in scenename:
             new_name = f"{condition}_{index:03d}"
             logging.debug(f"Renaming scene '{scenename}' to '{new_name}'")
         else:

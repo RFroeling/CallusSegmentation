@@ -1,7 +1,7 @@
+import logging
 import platform
 import shutil
 import subprocess
-import logging
 from pathlib import Path
 
 logger = logging.basicConfig(level="DEBUG")

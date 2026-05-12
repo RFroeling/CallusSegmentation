@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 
 from segmentation.core.io import read_lif, save_scenes_as_tiff
-from segmentation.core.logger import setup_logging
 
 # Configure logger
 logger = logging.getLogger(__name__)

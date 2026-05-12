@@ -22,7 +22,6 @@ from segmentation.core.cleaning import (
     remove_labels,
 )
 from segmentation.core.io import get_h5_files, load_h5, move_h5, read_h5_voxel_size, save_h5
-from segmentation.core.logger import setup_logging
 from segmentation.core.views import cleaning_comparison_plot
 
 # Configure logging

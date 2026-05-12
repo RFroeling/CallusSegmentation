@@ -1,13 +1,14 @@
-from pathlib import Path
 import logging
 import shutil
+from pathlib import Path
+
 import yaml
 
 from segmentation.tasks import (
+    clean_edges,
     convert_lif,
     panseg_workflow,
-    clean_edges,
-    )
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ def configure_yaml(
     export_dir.mkdir(parents=True, exist_ok=True)
 
     # Load YAML
-    with open(yaml_path, "r") as f:
+    with open(yaml_path) as f:
         config = yaml.safe_load(f)
 
     if "inputs" not in config or not config["inputs"]:
