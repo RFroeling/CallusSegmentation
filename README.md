@@ -26,11 +26,13 @@ cd CallusSegmentation
 uv sync
 ```
 
-### PanSeg dependencies
+### PanSeg installation
 
-There seems to be an issue with accessing the PanSeg dependencies through uv. A simple workaround is to make sure there's also a proper [PanSeg installation](https://kreshuklab.github.io/panseg/latest/chapters/getting_started/installation/) available on your machine.
+The package requires a local [PanSeg installation](https://kreshuklab.github.io/panseg/latest/chapters/getting_started/installation/) for workflows ([headless](#headless-workflow), [panseg](#tasks)) that interact with PanSeg. It searches for the PanSeg exectuable in the following order:
 
-> PanSeg requires Pytorch; on Linux with GPU, CUDA 12.6 is used; otherwise, CPU-only PyTorch is installed.
+1. Explicit executable path
+2. PATH
+3. Common standalone install layouts
 
 ## Usage
 
@@ -44,9 +46,9 @@ The toolkit is designed to run in a full headless mode, allowing (near) full-aut
 uv run run_segmentation.py headless --input <path/to/lif>
 ```
 
-The provided path can either point to a single LIF file, or a directory containing multiple LIF files (these will all be processed). There should be PanSeg [config YAML](https://kreshuklab.github.io/panseg/latest/chapters/workflow_gui/) present in the same directory as the LIF input file(s). The minimal output requirement for the config YAML is saving the label layer produces by PanSeg with the key `segmentation` as a .h5.
+The provided path can either point to a single LIF file, or a directory containing multiple LIF files (these will all be processed). There should be PanSeg [config YAML](https://kreshuklab.github.io/panseg/latest/chapters/workflow_gui/) present in the same directory as the LIF input file(s). The minimal output requirement for the config YAML is saving the label layer produced by PanSeg with the key `segmentation` as a .h5.
 
-#### File Structure After Headless Workflow
+#### Output file structure
 
 When running the full workflow in headless mode, the following directory structure is created (relative to your input directory):
 
@@ -117,12 +119,11 @@ CallusSegmentation/
 
 ## Dependencies
 
-- **panseg** (2.0.0rc12): Deep learning segmentation
+- **panseg**: Deep learning segmentation
 - **VTK**: Meshing
-- **bioio**, **bioio-lif**, **bioio-ome-tiff**: Image I/O
+- **bioio**, **bioio-lif**, **bioio-ome-tiff**: Image handling
 - **h5py**: HDF5 file handling
 - **scikit-image**: Image processing
-- **torch**, **torchvision**: Deep learning
 - **numpy**, **scipy**, **pandas**: Scientific computing
 - **matplotlib**: Visualization
 
