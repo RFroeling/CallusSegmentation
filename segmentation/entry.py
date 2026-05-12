@@ -41,9 +41,9 @@ def create_parser():
     )
     clean_parser.add_argument(
         "--key",
-        required=True,
         type=str,
-        help="Dataset key for segmentation",
+        help="(opt.) Dataset key for segmentation. Defaults to 'segmentation'.",
+        default="segmentation"
     )
     clean_parser.set_defaults(
         func=lambda args: run_clean_edges(args.input, args.key)
@@ -76,13 +76,14 @@ def create_parser():
     )
     panseg_parser.add_argument(
         "--config",
+        required=True,
         type=Path,
         help="Path to YAML config file",
     )
     panseg_parser.add_argument(
         "--exe",
         type=Path,
-        help="Path to local PanSeg executable",
+        help="(opt.) Path to local PanSeg executable. Defaults to 'None'.",
         default=None,
     )
     panseg_parser.set_defaults(
@@ -102,9 +103,9 @@ def create_parser():
     )
     meshing_parser.add_argument(
         "--key",
-        required=True,
         type=str,
-        help="Key to dataset that will be meshed.",
+        help="(Opt.) Key to dataset that will be meshed. Defaults to 'cleaned'.",
+        default="cleaned"
     )
     meshing_parser.set_defaults(func=lambda args: run_create_meshes(args.input, args.key))
 
@@ -118,15 +119,18 @@ def create_parser():
         type=Path,
         help="Path to LIF file or directory",
     )
-    panseg_parser.add_argument(
+    headless_parser.add_argument(
         "--exe",
         type=Path,
-        help="Path to local PanSeg executable",
+        help="(opt.) Path to local PanSeg executable. Defaults to 'None'.",
         default=None,
     )
     headless_parser.set_defaults(func=lambda args: run_headless(args.input, args.exe))
     
     return parser.parse_args()
+
+
+# ---------------- Launchers ----------------
 
 
 def launch_reviewer():
@@ -168,6 +172,7 @@ def run_inspect_h5():
     from segmentation.tasks.inspect_h5 import main
 
     main()
+
 
 def run_panseg_workflow(yaml_path: Path, panseg_path: str | Path | None = None):
     """Execute a PanSeg headless workflow from a YAML config file.
