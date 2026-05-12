@@ -152,7 +152,7 @@ def main(user_path: str | Path):
         convert_lif.main(file)
 
     # Run PanSeg headless on OME-TIFFs
-    panseg_workflow.main(yaml_path)
+    panseg_workflow.run_panseg(yaml_path)
 
     # Clean PanSeg output
     clean_edges.main(input_dir=base_dir / 'img' / 'h5' / 'raw', 
