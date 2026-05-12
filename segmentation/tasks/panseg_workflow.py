@@ -80,7 +80,7 @@ def find_panseg_executable(
 def run_panseg(
     config_path: str | Path,
     executable_path: str | Path | None = None,
-) -> int:
+) -> None:
     """
     Run a PanSeg job synchronously.
 
@@ -128,8 +128,6 @@ def run_panseg(
         command,
         check=True,
     )
-
-    return process.returncode
 
 if __name__ == "__main__":
     run_panseg(config_path=".data2/test_general_workflow.yaml")

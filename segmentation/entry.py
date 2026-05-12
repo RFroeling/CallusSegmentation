@@ -75,12 +75,18 @@ def create_parser():
         help="Run PanSeg workflow from YAML config file",
     )
     panseg_parser.add_argument(
-        "config",
+        "--config",
         type=Path,
         help="Path to YAML config file",
     )
+    panseg_parser.add_argument(
+        "--exe",
+        type=Path,
+        help="Path to local PanSeg executable",
+        default=None,
+    )
     panseg_parser.set_defaults(
-        func=lambda args: run_panseg_workflow(args.config)
+        func=lambda args: run_panseg_workflow(args.config, args.exe)
     )
 
     # ---------------- Meshing ----------------
@@ -112,7 +118,13 @@ def create_parser():
         type=Path,
         help="Path to LIF file or directory",
     )
-    headless_parser.set_defaults(func=lambda args: run_headless(args.input))
+    panseg_parser.add_argument(
+        "--exe",
+        type=Path,
+        help="Path to local PanSeg executable",
+        default=None,
+    )
+    headless_parser.set_defaults(func=lambda args: run_headless(args.input, args.exe))
     
     return parser.parse_args()
 
@@ -157,15 +169,16 @@ def run_inspect_h5():
 
     main()
 
-def run_panseg_workflow(yaml_path: Path):
+def run_panseg_workflow(yaml_path: Path, panseg_path: str | Path | None = None):
     """Execute a PanSeg headless workflow from a YAML config file.
 
     Args:
         yaml_path (Path): Path to the PanSeg YAML configuration file.
+        panseg_path (str | Path | None): Path to local PanSeg executable. Defaults to None.
     """
-    from segmentation.tasks.panseg_workflow import main
+    from segmentation.tasks.panseg_workflow import run_panseg
 
-    main(yaml_path)
+    run_panseg(yaml_path, panseg_path)
 
 
 def run_create_meshes(input_path: Path, segmentation_key: str):
@@ -179,10 +192,10 @@ def run_create_meshes(input_path: Path, segmentation_key: str):
     main(input_path, segmentation_key)
 
 
-def run_headless(input_path):
+def run_headless(input_path, panseg_path: str | Path | None = None):
     from segmentation.tasks.headless import main
 
-    main(input_path)
+    main(input_path, panseg_path)
 
 
 def main():

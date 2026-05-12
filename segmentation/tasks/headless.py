@@ -132,7 +132,7 @@ def headless_path_setup(user_path: str | Path) -> tuple[Path, list[Path]]:
     return base_dir, moved_files
 
 
-def main(user_path: str | Path):
+def main(user_path: str | Path, panseg_path: str | Path | None = None):
     # Setup correct file structure
     base_dir, files = headless_path_setup(user_path)
     
@@ -152,7 +152,7 @@ def main(user_path: str | Path):
         convert_lif.main(file)
 
     # Run PanSeg headless on OME-TIFFs
-    panseg_workflow.run_panseg(yaml_path)
+    panseg_workflow.run_panseg(yaml_path, panseg_path)
 
     # Clean PanSeg output
     clean_edges.main(input_dir=base_dir / 'img' / 'h5' / 'raw', 
