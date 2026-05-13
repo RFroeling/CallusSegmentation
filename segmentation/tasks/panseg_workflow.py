@@ -19,6 +19,7 @@ def find_panseg_executable(
     """
 
     system = platform.system()
+    logging.debug(f'Detected operating system: {system}')
 
     executable_name = "panseg.exe" if system == "Windows" else "panseg"
 
@@ -70,7 +71,10 @@ def find_panseg_executable(
         logging.debug(f"Searching for PanSeg executable in: {candidate}")
 
         if candidate.is_file():
+            logging.debug(f"Found PanSeg executable at: {candidate}")
             return candidate.resolve()
+
+        logging.debug(f"Didn't find PanSeg executable at: {candidate}")
 
     raise FileNotFoundError(
         "Could not locate the PanSeg executable."
@@ -130,4 +134,4 @@ def run_panseg(
     )
 
 if __name__ == "__main__":
-    run_panseg(config_path=".data2/test_general_workflow.yaml")
+    run_panseg(config_path="segmentation/tasks/test_workflow.yaml")
