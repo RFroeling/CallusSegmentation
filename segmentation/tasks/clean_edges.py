@@ -114,7 +114,7 @@ def cleanup_segmentation(path: Path, key: str | None) -> tuple[np.ndarray, np.nd
     return dataset, cleaned_dataset
 
 
-def main(input_dir: Path, segmentation_key: str, move: bool):
+def main(input_dir: Path, segmentation_key: str, move: bool, raw_key: str = 'raw'):
     """Process all configured .h5 files and save cleaned segmentations.
 
     Iterates over the files returned by :func:`segmentation.core.io.get_h5_files`,
@@ -132,7 +132,8 @@ def main(input_dir: Path, segmentation_key: str, move: bool):
         try:
             logger.info(f"Processing {h5_file.name}...")
             segmentation, cleaned_segmentation = cleanup_segmentation(h5_file, segmentation_key)
-            cleaning_comparison_plot(segmentation, cleaned_segmentation, h5_file, save_dir=img_dir)
+            raw_data = load_h5(h5_file, raw_key)
+            cleaning_comparison_plot(raw_data, segmentation, cleaned_segmentation, h5_file, save_dir=img_dir)
             voxel_size = read_h5_voxel_size(path=h5_file, key=segmentation_key)
             save_h5(h5_file, cleaned_segmentation, voxel_size=voxel_size, key='cleaned')
             if move:

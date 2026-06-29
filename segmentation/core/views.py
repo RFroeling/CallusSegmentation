@@ -61,7 +61,8 @@ def create_random_colormap(num_labels: int) -> mcolors.ListedColormap:
 
 
 def cleaning_comparison_plot(
-        dataset: np.ndarray, 
+        raw_dataset: np.ndarray,
+        segmented_dataset: np.ndarray,
         cleaned_dataset: np.ndarray, 
         path: Path, 
         save_dir: Path | None=None
@@ -77,25 +78,34 @@ def cleaning_comparison_plot(
         path (Path): Path to the original .h5 file (used for saving plots).
         save (bool): Whether to save the plot as a PNG file. Defaults to False.
     """
-    _, axes = plt.subplots(2, 2, figsize=(12, 10))
+    _, axes = plt.subplots(2, 3, figsize=(12, 10))
 
-    z = dataset.shape[0] // 2
-    x = dataset.shape[1] // 2
+    z = segmented_dataset.shape[0] // 2
+    x = segmented_dataset.shape[1] // 2
 
     # Create random colormap for labeled images
     cmap = create_random_colormap(cleaned_dataset.max() + 1)
 
-    axes[0, 0].imshow(dataset[z], cmap=cmap)
+    # Raw
+    axes[0, 0].imshow(raw_dataset[z], cmap='gray')
     axes[0, 0].set_title('Original XY')
 
-    axes[0, 1].imshow(dataset[:, x, :], cmap=cmap)
-    axes[0, 1].set_title('Original YZ')
+    axes[1, 0].imshow(raw_dataset[:, x, :], cmap='gray')
+    axes[1, 0].set_title('Original YZ')
+    
+    # Segmentation
+    axes[0, 1].imshow(segmented_dataset[z], cmap=cmap)
+    axes[0, 1].set_title('Segmented XY')
 
-    axes[1, 0].imshow(cleaned_dataset[z], cmap=cmap)
-    axes[1, 0].set_title('Cleaned XY')
+    axes[1, 1].imshow(segmented_dataset[:, x, :], cmap=cmap)
+    axes[1, 1].set_title('Segmented YZ')
 
-    axes[1, 1].imshow(cleaned_dataset[:, x, :], cmap=cmap)
-    axes[1, 1].set_title('Cleaned YZ')
+    # Cleaned
+    axes[0, 2].imshow(cleaned_dataset[z], cmap=cmap)
+    axes[0, 2].set_title('Cleaned XY')
+
+    axes[1, 2].imshow(cleaned_dataset[:, x, :], cmap=cmap)
+    axes[1, 2].set_title('Cleaned YZ')
 
     if save_dir is not None:
         import matplotlib as mpl
