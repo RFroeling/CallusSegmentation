@@ -124,7 +124,12 @@ def labels_to_meshes(
     # Analysis only on unique labels, that are no artefacts (small, 2D labels)
     filtered_labels = filter_unique_labels(data, min_size=min_size)
 
-    age = calculate_age_from_id(callus_id)
+    age = None
+    try:
+        age = calculate_age_from_id(callus_id)
+    except Exception as exc:
+        logger.warning("Could not calculate age for callus '%s': %s", callus_id, exc)
+
     contact_pairs, background_contact, neighbor_count = compute_contacts_and_neighbors(data, 
                                                                                        filtered_labels, 
                                                                                        voxel_size)
